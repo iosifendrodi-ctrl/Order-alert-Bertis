@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block content %}
+<div class="wrap"><a href="/">← Dashboard</a><h1>Istoric comenzi</h1>
+<div class="panel"><table class="table"><tr><th>Comandă</th><th>Client</th><th>Status</th><th>Închisă la</th><th>Închisă de</th><th>Observație</th><th></th></tr>
+{% for o in orders %}<tr><td>{{o.external_id}}</td><td>{{o.customer}}</td><td><span class="badge ok">ÎNCHISĂ</span></td><td>{{o.closed_at}}</td><td>{{o.closed_by}}</td><td>{{o.resolution_note or '—'}}</td><td><a class="btn secondary" href="/order/{{o.id}}">Detalii</a></td></tr>
+{% else %}<tr><td colspan="7">Nu există comenzi închise.</td></tr>{% endfor %}</table></div></div>{% endblock %}

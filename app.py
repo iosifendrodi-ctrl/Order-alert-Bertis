@@ -73,6 +73,19 @@ def init_db():
       actor TEXT, details TEXT, created_at TEXT
     );
     """)
+    # v11.1 migration: preserve existing databases while adding order lifecycle fields.
+    existing_cols = {r[1] for r in c.execute("PRAGMA table_info(orders)").fetchall()}
+    for col, ddl in [
+        ("closed_at", "ALTER TABLE orders ADD COLUMN closed_at TEXT"),
+        ("closed_by", "ALTER TABLE orders ADD COLUMN closed_by TEXT"),
+        ("resolution_note", "ALTER TABLE orders ADD COLUMN resolution_note TEXT"),
+    ]:
+        if col not in existing_cols:
+            c.execute(ddl)
+    alert_cols = {r[1] for r in c.execute("PRAGMA table_info(alerts)").fetchall()}
+    if "resolved_at" not in alert_cols:
+        c.execute("ALTER TABLE alerts ADD COLUMN resolved_at TEXT")
+    c.commit()
     defaults={"alert_threshold":"80","critical_threshold":"50","zero_alert":"1"}
     for k,v in defaults.items():
         c.execute("INSERT OR IGNORE INTO settings(key,value) VALUES(?,?)",(k,v))
@@ -157,7 +170,7 @@ def evaluate_order(order_id):
     return db_one("SELECT * FROM alerts WHERE id=?",(aid,))
 
 def evaluate_all():
-    for o in db_all("SELECT id FROM orders WHERE status='PICKING_COMPLETED'"):
+    for o in db_all("SELECT id FROM orders WHERE status='PICKING_COMPLETED' AND status!='CLOSED'"):
         evaluate_order(o["id"])
 
 @app.route("/")
@@ -166,9 +179,11 @@ def dashboard():
     orders=db_all("SELECT * FROM orders ORDER BY id DESC")
     stats={
       "total":len(orders),
+      "active":sum(1 for o in orders if o["status"]!="CLOSED"),
+      "closed":sum(1 for o in orders if o["status"]=="CLOSED"),
       "complete":sum(1 for o in orders if o["status"]=="PICKING_COMPLETED" and not db_one("SELECT 1 FROM alerts WHERE order_id=?",(o["id"],))),
-      "incomplete":db_one("SELECT COUNT(*) n FROM alerts")["n"],
-      "critical":db_one("SELECT COUNT(*) n FROM alerts WHERE severity='CRITICAL'")["n"],
+      "incomplete":db_one("SELECT COUNT(*) n FROM alerts WHERE resolved_at IS NULL")["n"],
+      "critical":db_one("SELECT COUNT(*) n FROM alerts WHERE severity='CRITICAL' AND resolved_at IS NULL")["n"],
       "verification":db_one("SELECT COUNT(*) n FROM alerts WHERE verification_requested_at IS NOT NULL AND resolved_at IS NULL")["n"]
     }
     return render_template("dashboard.html",orders=orders,stats=stats)
@@ -214,6 +229,33 @@ def resolve(alert_id):
         db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
                 (a["order_id"],"VERIFICATION_RESOLVED","warehouse",f"{reason}: {note}",now()))
     return redirect(url_for("order",order_id=a["order_id"]))
+
+
+@app.post("/order/<int:order_id>/close")
+def close_order(order_id):
+    o=db_one("SELECT * FROM orders WHERE id=?",(order_id,))
+    if not o:
+        return redirect(url_for("dashboard"))
+    if o["status"]=="CLOSED":
+        return redirect(url_for("order", order_id=order_id))
+    alert=db_one("SELECT * FROM alerts WHERE order_id=?",(order_id,))
+    note=request.form.get("resolution_note","").strip()
+    actor=request.form.get("closed_by","management").strip() or "management"
+    # A critical/warning order must have its verification resolved before closure.
+    if alert and not alert["resolved_at"]:
+        db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
+                (order_id,"CLOSE_BLOCKED",actor,"Închiderea necesită rezolvarea verificării.",now()))
+        return redirect(url_for("order", order_id=order_id))
+    db_exec("""UPDATE orders SET status='CLOSED', closed_at=?, closed_by=?, resolution_note=? WHERE id=?""",
+            (now(),actor,note,order_id))
+    db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
+            (order_id,"ORDER_CLOSED",actor,note or "Comanda închisă de Management",now()))
+    return redirect(url_for("order", order_id=order_id))
+
+@app.route("/history")
+def history():
+    orders=db_all("SELECT * FROM orders WHERE status='CLOSED' ORDER BY closed_at DESC, id DESC")
+    return render_template("history.html", orders=orders)
 
 @app.route("/settings", methods=["GET","POST"])
 def settings():
