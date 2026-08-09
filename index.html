@@ -56,8 +56,23 @@ body{margin:0;background:var(--bertis-paper);color:var(--bertis-ink);font-family
 .sectiontitle h2{margin:0}
 @media(max-width:520px){.tabs{top:78px}.tabs button{font-size:12px;padding:10px 4px}.metrics{grid-template-columns:1fr 1fr 1fr}.metric{padding:12px 10px}}
 </style></head><body><header class="top"><div class="brandrow"><div class="brandmark">BERTIS</div><div class="branddot"></div><h1>ORDER ALERT</h1></div><p>Demo operațional • controlul diferențelor de picking</p></header><main class="wrap"><div class="tabs" role="tablist"><button type="button" id="agentTab" class="active" data-role="agent">👤 Agent vânzări</button><button type="button" id="managerTab" data-role="manager">💼 Management</button><button type="button" id="warehouseTab" data-role="warehouse">🏭 Depozit</button></div><section id="agent"><div class="panel" id="agentAlertSummary" style="padding:10px 14px;margin-bottom:10px"><b>🔔 Alerte agent</b> <span id="agentAlertBadge" class="badge red">1</span><span id="agentAlertSummaryText" class="muted" style="margin-left:8px">Diferențe detectate în comandă</span><button class="btn light" id="enableNotificationsBtn" type="button" style="margin-top:8px">ACTIVEAZĂ NOTIFICĂRI</button></div><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Client HoReCa • Agent A</div><div class="line"><b>Salam de iarnă Bertis</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnații Bunicii Bertis</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" id="ackBtn" type="button">AM VĂZUT</button><button class="btn redbtn" id="verifyBtn" type="button">SOLICITĂ VERIFICARE</button><div id="agentMsg" class="muted" style="margin-top:8px"></div></div><div class="panel"><h3>Stadiul comenzii</h3><select class="select" id="stage"><option value="introduced">Comandă introdusă</option><option value="confirmed">Confirmată de agent</option><option value="sent">Trimisă în depozit</option><option value="picking">Picking în curs</option><option value="picked">Picking finalizat</option><option value="difference" selected>Diferență detectată</option><option value="verification">Verificare solicitată</option><option value="resolved">Rezolvată</option></select></div></section><section id="manager" class="hidden"><div class="metrics"><div class="metric"><div class="muted">Comenzi</div><div class="n">21</div></div><div class="metric"><div class="muted">Incomplete</div><div class="n" id="managerIncomplete">1</div></div><div class="metric"><div class="muted">Critice</div><div class="n" id="managerCritical">1</div></div></div><div class="panel" id="managerIncompletePanel">
-<div class="sectiontitle"><h2>Comenzi cu diferențe</h2><span class="badge red">ALERTE</span></div>
+<div class="sectiontitle"><h2>Comenzi cu diferențe</h2><span class="badge blue">INCOMPLETE</span></div>
 <div id="managerIncompleteList"></div>
+</div>
+<div id="managerDetailPanel" class="panel hidden" style="margin-top:12px">
+  <div class="sectiontitle"><h2>Detalii comandă #12548</h2><span id="managerDetailSeverity" class="badge green">ÎN LIMITE</span></div>
+  <div class="muted" style="margin:4px 0 12px">Client HoReCa • Agent A • Picking finalizat</div>
+  <div class="metrics">
+    <div class="metric"><div class="muted">Comandat</div><div class="n" id="detailOrdered">16 kg</div></div>
+    <div class="metric"><div class="muted">Pregătit</div><div class="n" id="detailPicked">15 kg</div></div>
+    <div class="metric"><div class="muted">Lipsă</div><div class="n" id="detailMissing">1 kg</div></div>
+  </div>
+  <div class="line"><b>Salam de iarnă Bertis</b><br>Comandat: 10 kg · Pregătit: <b id="detailSalamiPicked">9 kg</b> · Lipsă: <b id="detailSalamiMissing">1 kg</b> · <span id="detailSalamiSeverity" class="badge green">OK</span></div>
+  <div class="line"><b>Cârnații Bunicii Bertis</b><br>Comandat: 6 kg · Pregătit: <b id="detailSausagePicked">6 kg</b> · Lipsă: <b id="detailSausageMissing">0 kg</b> · <span id="detailSausageSeverity" class="badge green">OK</span></div>
+  <div class="notice" style="margin-top:12px"><b>Praguri active</b><br>Avertizare: <span id="detailWarning">15%</span> · Critic: <span id="detailCritical">40%</span><br><span id="detailThresholdMessage">Diferențele existente sunt sub pragul de alertare configurat.</span></div>
+  <h3>Istoric comandă</h3>
+  <div class="timeline" id="detailTimeline"></div>
+  <button class="btn light" type="button" id="closeManagerDetailsBtn">ÎNAPOI LA COMENZI</button>
 </div>
 <div class="panel">
 <h2>⚙️ Praguri de alertare</h2>
@@ -183,6 +198,56 @@ function requestBrowserNotifications() {
   });
 }
 
+function openManagerDetails() {
+  const panel = $('managerDetailPanel');
+  if (!panel) return;
+  panel.classList.remove('hidden');
+  $('managerIncompletePanel').classList.add('hidden');
+  updateManagerDetails();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function closeManagerDetails() {
+  const panel = $('managerDetailPanel');
+  if (!panel) return;
+  panel.classList.add('hidden');
+  $('managerIncompletePanel').classList.remove('hidden');
+}
+
+function updateManagerDetails() {
+  const sm = Math.max(0, 10 - state.salami);
+  const ss = Math.max(0, 6 - state.sausage);
+  const salamiLevel = productSeverity(sm,10);
+  const sausageLevel = productSeverity(ss,6);
+  const critical = salamiLevel === 'critical' || sausageLevel === 'critical';
+  const warning = salamiLevel === 'warning' || sausageLevel === 'warning';
+  const overall = critical ? 'critical' : warning ? 'warning' : 'none';
+  const badge = $('managerDetailSeverity');
+  if (badge) {
+    badge.textContent = critical ? 'ALERTĂ CRITICĂ' : warning ? 'AVERTIZARE' : 'ÎN LIMITE';
+    badge.className = 'badge ' + (critical || warning ? 'red' : 'green');
+  }
+  $('detailOrdered').textContent = '16 kg';
+  $('detailPicked').textContent = (state.salami + state.sausage) + ' kg';
+  $('detailMissing').textContent = (sm + ss) + ' kg';
+  $('detailSalamiPicked').textContent = state.salami + ' kg';
+  $('detailSalamiMissing').textContent = sm + ' kg';
+  $('detailSausagePicked').textContent = state.sausage + ' kg';
+  $('detailSausageMissing').textContent = ss + ' kg';
+  [['detailSalamiSeverity',salamiLevel],['detailSausageSeverity',sausageLevel]].forEach(([id,l])=>{
+    const e=$(id); if(e){e.textContent=severityLabel(l);e.className='badge '+(l==='none'?'green':l==='warning'?'amber':'red');}
+  });
+  $('detailWarning').textContent = state.thresholds.warning + '%';
+  $('detailCritical').textContent = state.thresholds.critical + '%';
+  $('detailThresholdMessage').textContent = critical
+    ? 'Diferența depășește pragul critic configurat.'
+    : warning
+    ? 'Diferența depășește pragul de avertizare configurat.'
+    : 'Diferențele existente sunt sub pragul de alertare configurat.';
+  const tl=$('detailTimeline');
+  if(tl) tl.innerHTML=state.events.map(e=>`<div class="event">${e.time} — <b>${e.text}</b></div>`).join('');
+}
+
 function render() {
   const sm = Math.max(0, 10 - state.salami);
   const ss = Math.max(0, 6 - state.sausage);
@@ -249,7 +314,7 @@ function render() {
       </div>` :
       '<div class="okbox"><b>🟢 Nu există comenzi incomplete.</b></div>';
     const details = $('managerDetailsBtn');
-    if (details) details.onclick = () => showRole('agent');
+    if (details) details.onclick = () => openManagerDetails();
   }
 
   if ($('warningThreshold')) $('warningThreshold').value = state.thresholds.warning;
@@ -260,6 +325,7 @@ function render() {
   $('verifyBtn').disabled = state.verified;
   $('verifyBtn').textContent = state.verified ? '✓ VERIFICARE SOLICITATĂ' : 'SOLICITĂ VERIFICARE';
   renderTimeline();
+  if ($('managerDetailPanel') && !$('managerDetailPanel').classList.contains('hidden')) updateManagerDetails();
 }
 
 function ack() {
@@ -336,6 +402,7 @@ function bindEvents() {
   $('completeAllBtn').addEventListener('click', completeAll);
   $('saveThresholdsBtn').addEventListener('click', saveThresholds);
   $('enableNotificationsBtn').addEventListener('click', requestBrowserNotifications);
+  $('closeManagerDetailsBtn').addEventListener('click', closeManagerDetails);
 
   // Allow direct demo links such as ?role=manager or ?role=warehouse.
   const roleParam = new URLSearchParams(location.search).get('role');
