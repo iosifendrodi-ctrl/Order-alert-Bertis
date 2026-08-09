@@ -47,3 +47,19 @@ Comandat: {{l.ordered:g}} {{l.unit}} &nbsp; | &nbsp; Pregătit: {{l.picked:g}} {
 {% for a in audit %}<div class="line"><strong>{{a.created_at}}</strong> — {{a.event}} — {{a.actor}}<br><span class="muted">{{a.details}}</span></div>
 {% else %}<p class="muted">Nu există evenimente.</p>{% endfor %}</div>
 </div>{% endblock %}
+<section class="order-close-panel" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
+  <h3>Închiderea comenzii</h3>
+  {% if order.status|default('active') != 'closed' %}
+  <form method="post" action="{{ url_for('close_order', order_id=order.id) }}"
+        onsubmit="return confirm('Închizi această comandă? Datele de picking și alerta vor fi păstrate în Istoric.');">
+    <label for="closed_by">Închisă de</label>
+    <input id="closed_by" name="closed_by" required placeholder="Nume utilizator">
+    <label for="resolution_note">Observație / rezoluție</label>
+    <textarea id="resolution_note" name="resolution_note" rows="3"
+              placeholder="Observație privind rezolvarea comenzii"></textarea>
+    <button type="submit" class="btn btn-danger">ÎNCHIDE COMANDA</button>
+  </form>
+  {% else %}
+  <div class="alert alert-success">Comanda este deja închisă.</div>
+  {% endif %}
+</section>
