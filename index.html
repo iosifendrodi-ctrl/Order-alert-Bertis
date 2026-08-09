@@ -139,20 +139,27 @@ function render() {
   $('sausagePicked').textContent = state.sausage + ' kg';
   $('sausageMissing').textContent = ss + ' kg';
 
-  $('alertCount').textContent = incomplete ? 1 : 0;
+  const activeWarning = salamiSeverity === 'warning' || sausageSeverity === 'warning';
+  const activeAlert = activeWarning || critical;
+  $('alertCount').textContent = activeAlert ? 1 : 0;
   $('statusBadge').textContent =
-    state.stage === 'resolved' ? 'REZOLVATĂ' :
     critical ? 'ALERTĂ CRITICĂ' :
-    incomplete ? 'DIFERENȚĂ DETECTATĂ' : 'COMPLETĂ';
-  $('statusBadge').className = 'badge ' + (incomplete ? 'red' : 'green');
+    activeWarning ? 'AVERTIZARE' :
+    'COMPLETĂ';
+  $('statusBadge').className = 'badge ' + (activeAlert ? 'red' : 'green');
 
-  $('alertBox').className = incomplete ? 'dangerbox' : 'okbox';
-  $('alertBox').innerHTML = incomplete
-    ? `<b>${critical ? '🔴 ALERTĂ CRITICĂ' : '🟠 AVERTIZARE' } — COMANDA #12548</b><br>
-       Depozitul a finalizat picking-ul cu diferențe.<br>
+  $('alertBox').className = activeAlert ? 'dangerbox' : 'okbox';
+  $('alertBox').innerHTML = critical
+    ? `<b>🔴 ALERTĂ CRITICĂ — COMANDA #12548</b><br>
+       Depozitul a finalizat picking-ul cu o abatere critică.<br>
        Salam Premium: <b>${sm} kg lipsă</b> · Cârnați Tradiționali: <b>${ss} kg lipsă</b><br>
        <span class="muted">Praguri active: avertizare ${state.thresholds.warning}% · critic ${state.thresholds.critical}%</span>`
-    : '<b>🟢 COMANDĂ COMPLETĂ</b><br>Toate cantitățile au fost pregătite.';
+    : activeWarning
+    ? `<b>🟠 AVERTIZARE — COMANDA #12548</b><br>
+       Diferența a depășit pragul de avertizare.<br>
+       Salam Premium: <b>${sm} kg lipsă</b> · Cârnați Tradiționali: <b>${ss} kg lipsă</b><br>
+       <span class="muted">Praguri active: avertizare ${state.thresholds.warning}% · critic ${state.thresholds.critical}%</span>`
+    : '<b>🟢 COMANDĂ ÎN LIMITE</b><br>Diferențele existente sunt sub pragul de alertare configurat.';
 
   $('verifyCount').textContent = state.verified ? 1 : 0;
   $('managerVerify').textContent = state.verified ? 1 : 0;
@@ -162,12 +169,14 @@ function render() {
 
   const badge = $('agentAlertBadge');
   if (badge) {
-    badge.textContent = incomplete ? (critical ? '1 CRITICĂ' : '1') : '0';
-    badge.className = 'badge ' + (critical ? 'red' : incomplete ? 'red' : 'green');
+    badge.textContent = activeAlert ? (critical ? '1 CRITICĂ' : '1') : '0';
+    badge.className = 'badge ' + (activeAlert ? 'red' : 'green');
   }
   const summary = $('agentAlertSummaryText');
-  if (summary) summary.textContent = incomplete
-    ? (critical ? 'Atenție: există o diferență critică.' : 'Există o diferență de picking.')
+  if (summary) summary.textContent = critical
+    ? 'Atenție: există o diferență critică.'
+    : activeWarning
+    ? 'Există o diferență care depășește pragul de avertizare.'
     : 'Nu există alerte active.';
 
   const list = $('managerIncompleteList');
@@ -229,15 +238,20 @@ function finishPicking() {
   state.ack = false;
   const sm = Math.max(0, 10 - state.salami);
   const ss = Math.max(0, 6 - state.sausage);
-  const critical = productSeverity(sm,10) === 'critical' || productSeverity(ss,6) === 'critical';
+  const salamiLevel = productSeverity(sm,10);
+  const sausageLevel = productSeverity(ss,6);
+  const critical = salamiLevel === 'critical' || sausageLevel === 'critical';
+  const warning = salamiLevel === 'warning' || sausageLevel === 'warning';
   $('warehouseMsg').textContent = 'Picking finalizat. Diferențele au fost calculate automat.';
   addEvent(critical ? 'Depozit a finalizat picking-ul — ALERTĂ CRITICĂ' :
-                    (sm || ss) ? 'Depozit a finalizat picking-ul — diferență detectată' :
+                    warning ? 'Depozit a finalizat picking-ul — AVERTIZARE' :
+                    (sm || ss) ? 'Depozit a finalizat picking-ul — diferență sub prag' :
                     'Depozit a finalizat picking-ul — comandă completă');
-  toast(critical ? 'Alertă critică generată' : (sm || ss) ? 'Diferență detectată' : 'Picking complet');
+  toast(critical ? 'Alertă critică generată' : warning ? 'Avertizare generată' :
+        (sm || ss) ? 'Diferență sub pragul de alertare' : 'Picking complet');
   render();
-  if ((sm || ss) && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification(critical ? 'Order Alert — critic' : 'Order Alert', {
+  if ((critical || warning) && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification(critical ? 'Order Alert — critic' : 'Order Alert — avertizare', {
       body: `Comanda #12548 are ${sm + ss} kg lipsă.`
     });
   }
