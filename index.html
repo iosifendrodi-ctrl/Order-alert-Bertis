@@ -55,7 +55,16 @@ body{margin:0;background:var(--bertis-paper);color:var(--bertis-ink);font-family
 .sectiontitle{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .sectiontitle h2{margin:0}
 @media(max-width:520px){.tabs{top:78px}.tabs button{font-size:12px;padding:10px 4px}.metrics{grid-template-columns:1fr 1fr 1fr}.metric{padding:12px 10px}}
-</style></head><body><header class="top"><div class="brandrow"><div class="brandmark">BERTIS</div><div class="branddot"></div><h1>ORDER ALERT</h1></div><p>Demo operațional • controlul diferențelor de picking</p></header><main class="wrap"><div class="tabs" role="tablist"><button type="button" id="agentTab" class="active" data-role="agent">👤 Agent vânzări</button><button type="button" id="managerTab" data-role="manager">💼 Management</button><button type="button" id="warehouseTab" data-role="warehouse">🏭 Depozit</button></div><section id="agent"><div class="panel" id="agentAlertSummary" style="padding:10px 14px;margin-bottom:10px"><b>🔔 Alerte agent</b> <span id="agentAlertBadge" class="badge red">1</span><span id="agentAlertSummaryText" class="muted" style="margin-left:8px">Diferențe detectate în comandă</span><button class="btn light" id="enableNotificationsBtn" type="button" style="margin-top:8px">ACTIVEAZĂ NOTIFICĂRI</button></div><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Client HoReCa • Agent A</div><div class="line"><b>Salam de iarnă Bertis</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnații Bunicii Bertis</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" id="ackBtn" type="button">AM VĂZUT</button><button class="btn redbtn" id="verifyBtn" type="button">SOLICITĂ VERIFICARE</button><div id="agentMsg" class="muted" style="margin-top:8px"></div></div><div class="panel"><h3>Stadiul comenzii</h3><select class="select" id="stage"><option value="introduced">Comandă introdusă</option><option value="confirmed">Confirmată de agent</option><option value="sent">Trimisă în depozit</option><option value="picking">Picking în curs</option><option value="picked">Picking finalizat</option><option value="difference" selected>Diferență detectată</option><option value="verification">Verificare solicitată</option><option value="resolved">Rezolvată</option></select></div></section><section id="manager" class="hidden"><div class="metrics"><div class="metric"><div class="muted">Comenzi</div><div class="n">21</div></div><div class="metric"><div class="muted">Incomplete</div><div class="n" id="managerIncomplete">1</div></div><div class="metric"><div class="muted">Critice</div><div class="n" id="managerCritical">1</div></div></div><div class="panel" id="managerIncompletePanel">
+</style>
+<style>
+.warnbox{background:var(--amber-soft,#fff4d6);border-left:5px solid var(--amber,#9a6500);border-radius:12px;padding:13px}
+.integrity-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.integrity-table th,.integrity-table td{padding:9px 7px;border-bottom:1px solid #eee8e2;text-align:right}
+.integrity-table th:first-child,.integrity-table td:first-child{text-align:left}
+.integrity-table tfoot td{font-weight:900;border-top:2px solid #d9d1ca}
+</style>
+
+</head><body><header class="top"><div class="brandrow"><div class="brandmark">BERTIS</div><div class="branddot"></div><h1>ORDER ALERT</h1></div><p>Demo operațional • controlul diferențelor de picking</p></header><main class="wrap"><div class="tabs" role="tablist"><button type="button" id="agentTab" class="active" data-role="agent">👤 Agent vânzări</button><button type="button" id="managerTab" data-role="manager">💼 Management</button><button type="button" id="warehouseTab" data-role="warehouse">🏭 Depozit</button></div><section id="agent"><div class="panel" id="agentAlertSummary" style="padding:10px 14px;margin-bottom:10px"><b>🔔 Alerte agent</b> <span id="agentAlertBadge" class="badge red">1</span><span id="agentAlertSummaryText" class="muted" style="margin-left:8px">Diferențe detectate în comandă</span><button class="btn light" id="enableNotificationsBtn" type="button" style="margin-top:8px">ACTIVEAZĂ NOTIFICĂRI</button></div><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Client HoReCa • Agent A</div><div class="line"><b>Salam de iarnă Bertis</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnații Bunicii Bertis</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" id="ackBtn" type="button">AM VĂZUT</button><button class="btn redbtn" id="verifyBtn" type="button">SOLICITĂ VERIFICARE</button><div id="agentMsg" class="muted" style="margin-top:8px"></div></div><div class="panel"><h3>Stadiul comenzii</h3><select class="select" id="stage"><option value="introduced">Comandă introdusă</option><option value="confirmed">Confirmată de agent</option><option value="sent">Trimisă în depozit</option><option value="picking">Picking în curs</option><option value="picked">Picking finalizat</option><option value="difference" selected>Diferență detectată</option><option value="verification">Verificare solicitată</option><option value="resolved">Rezolvată</option></select></div></section><section id="manager" class="hidden"><div class="metrics"><div class="metric"><div class="muted">Comenzi</div><div class="n">21</div></div><div class="metric"><div class="muted">Incomplete</div><div class="n" id="managerIncomplete">1</div></div><div class="metric"><div class="muted">Critice</div><div class="n" id="managerCritical">1</div></div></div><div class="panel" id="managerIncompletePanel">
 <div class="sectiontitle"><h2>Comenzi cu diferențe</h2><span class="badge blue">INCOMPLETE</span></div>
 <div id="managerIncompleteList"></div>
 </div>
@@ -85,7 +94,21 @@ Pragurile sunt configurabile și se aplică fiecărui produs în parte. Pentru d
 <button class="btn" id="saveThresholdsBtn" type="button">SALVEAZĂ PRAGURILE</button>
 <div id="thresholdMsg" class="muted" style="margin-top:8px"></div>
 </div>
-<div class="panel"><h2>Dashboard</h2><div class="line">Comenzi complete <b style="float:right">85,7%</b></div><div class="line">Produse cu diferențe <b style="float:right" id="diffProducts">2</b></div><div class="line">Verificări solicitate <b style="float:right" id="managerVerify">0</b></div></div><div class="panel"><h2>Istoric #12548</h2><div class="timeline" id="timeline"></div></div></section><section id="warehouse" class="hidden"><div class="notice"><b>Operator depozit • simulare picking</b><br>Modifică ce s-a găsit la picking. La finalizare, aplicația calculează automat diferența.</div><div class="panel"><h2>Comanda #12548</h2><div class="line"><b>Salam de iarnă Bertis</b><div class="qty"><span>Comandat 10 kg</span><input id="salamiInput" type="number" min="0" max="10" value="6"></div></div><div class="line"><b>Cârnații Bunicii Bertis</b><div class="qty"><span>Comandat 6 kg</span><input id="sausageInput" type="number" min="0" max="6" value="0"></div></div><button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button><button class="btn light" id="completeAllBtn" type="button">SIMULEAZĂ COMANDĂ COMPLETĂ</button><div id="warehouseMsg" class="muted" style="margin-top:9px"></div></div></section><div class="brandnote">Bertis Distribution • Order Alert Demo<br>Controlul diferențelor. Reacție rapidă. Trasabilitate.</div></main><div id="toast" class="toast"></div><script>
+<div class="panel"><h2>Dashboard</h2><div class="line">Comenzi complete <b style="float:right">85,7%</b></div><div class="line">Produse cu diferențe <b style="float:right" id="diffProducts">2</b></div><div class="line">Verificări solicitate <b style="float:right" id="managerVerify">0</b></div></div><div class="panel"><h2>Istoric #12548</h2><div class="timeline" id="timeline"></div></div></section><section id="warehouse" class="hidden"><div class="notice"><b>Operator depozit • simulare picking</b><br>Modifică ce s-a găsit la picking. La finalizare, aplicația calculează automat diferența.</div><div class="panel"><h2>Comanda #12548</h2><div class="line"><b>Salam de iarnă Bertis</b><div class="qty"><span>Comandat 10 kg</span><input id="salamiInput" type="number" min="0" max="10" value="6"></div></div><div class="line"><b>Cârnații Bunicii Bertis</b><div class="qty"><span>Comandat 6 kg</span><input id="sausageInput" type="number" min="0" max="6" value="0"></div></div><button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button><button class="btn light" id="completeAllBtn" type="button">SIMULEAZĂ COMANDĂ COMPLETĂ</button><div id="warehouseMsg" class="muted" style="margin-top:9px"></div></div></section><div class="brandnote">Bertis Distribution • Order Alert Demo<br>Controlul diferențelor. Reacție rapidă. Trasabilitate.</div>
+<div id="v7IntegrityPanel" class="panel">
+  <div class="sectiontitle">
+    <h3>Integritatea datelor</h3>
+    <span class="badge blue">v7</span>
+  </div>
+  <p class="muted">Managementul trebuie să folosească aceleași valori pe produs ca Depozitul: comandat, pregătit și lipsă. Totalurile sunt reconciliate înainte de afișare.</p>
+  <div class="integrity-table">
+    <thead><tr><th>Produs</th><th>Comandat</th><th>Pregătit</th><th>Lipsă</th></tr></thead>
+    <tbody><tr><td>Exemplu</td><td>10 kg</td><td>9 kg</td><td>1 kg</td></tr></tbody>
+    <tfoot><tr><td>TOTAL</td><td>10 kg</td><td>9 kg</td><td>1 kg</td></tr></tfoot>
+  </div>
+</div>
+
+</main><div id="toast" class="toast"></div><script>
 const state = {
   salami: 6,
   sausage: 0,
@@ -428,4 +451,43 @@ if (document.readyState === 'loading') {
   bindEvents();
   registerPWA();
 }
-</script></body></html>
+</script>
+<script>
+/* v7 — single source of truth for Management totals */
+function OA_v7_calculateTotals(items){
+  const rows = (Array.isArray(items) ? items : []).map(x => {
+    const ordered = Number(x.ordered ?? x.qty ?? x.commanded ?? 0);
+    const picked  = Number(x.picked ?? x.prepared ?? x.fulfilled ?? 0);
+    const missing = Math.max(0, ordered - picked);
+    return { ...x, ordered, picked, missing };
+  });
+  const ordered = rows.reduce((s,x)=>s+x.ordered,0);
+  const picked  = rows.reduce((s,x)=>s+x.picked,0);
+  const missing = rows.reduce((s,x)=>s+x.missing,0);
+  const pct = ordered > 0 ? (missing / ordered) * 100 : 0;
+  return { rows, ordered, picked, missing, pct };
+}
+function OA_v7_severity(pct, warn, critical){
+  if (pct >= Number(critical)) return "critical";
+  if (pct >= Number(warn)) return "warning";
+  return "ok";
+}
+function OA_v7_renderIntegrity(el, totals, warn, critical){
+  if(!el) return;
+  const sev = OA_v7_severity(totals.pct, warn, critical);
+  const label = sev === "critical" ? "ALERTĂ CRITICĂ" : sev === "warning" ? "AVERTIZARE" : "ÎN LIMITE";
+  const cls = sev === "critical" ? "dangerbox" : sev === "warning" ? "warnbox" : "okbox";
+  el.innerHTML = `
+    <div class="${cls}">
+      <strong>${label}</strong><br>
+      Comandat: <b>${totals.ordered}</b> kg ·
+      Pregătit: <b>${totals.picked}</b> kg ·
+      Lipsă: <b>${totals.missing}</b> kg ·
+      Diferență: <b>${totals.pct.toFixed(2)}%</b><br>
+      Prag avertizare: <b>${Number(warn).toFixed(2)}%</b> ·
+      Prag critic: <b>${Number(critical).toFixed(2)}%</b>
+    </div>`;
+}
+</script>
+
+</body></html>
