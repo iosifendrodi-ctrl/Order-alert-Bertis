@@ -285,3 +285,25 @@ def calculate_severity(shortage_pct, warning_threshold, critical_threshold):
         return "warning"
     return "ok"
 
+
+
+# v9 — Management dashboard aggregation
+def management_dashboard_stats(orders):
+    stats = {"total": 0, "ok": 0, "warning": 0, "critical": 0,
+             "missing_kg": 0.0, "ordered_kg": 0.0, "picked_kg": 0.0}
+    for order in orders or []:
+        stats["total"] += 1
+        severity = str(order.get("severity", order.get("status", "ok"))).lower()
+        if severity in ("critical", "crit", "critic"):
+            stats["critical"] += 1
+        elif severity in ("warning", "warn", "avertizare"):
+            stats["warning"] += 1
+        else:
+            stats["ok"] += 1
+        ordered = float(order.get("ordered_kg", order.get("ordered", 0)) or 0)
+        picked = float(order.get("picked_kg", order.get("picked", 0)) or 0)
+        stats["ordered_kg"] += ordered
+        stats["picked_kg"] += picked
+        stats["missing_kg"] += max(0.0, ordered - picked)
+    return stats
+
