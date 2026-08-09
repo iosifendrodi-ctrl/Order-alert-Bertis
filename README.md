@@ -1,7 +1,15 @@
-# Order Alert — iPhone PWA
+# Order Alert v2 — iPhone/Android PWA
 
-Aceasta este versiunea web/PWA a demo-ului Order Alert v2, pregătită pentru iPhone.
+Demo COSYS picking discrepancy simulator.
 
-Fișierele sunt toate în rădăcina repository-ului: index.html, manifest.json, sw.js și iconurile.
+## Roles
+- Agent
+- Manager
+- Depozit
 
-După publicare pe Vercel, în Safari: Share → Add to Home Screen → Add.
+## Direct demo links
+- `/` or `?role=agent`
+- `?role=manager`
+- `?role=warehouse`
+
+The app registers a service worker and can be installed from Safari/Chrome as a PWA.

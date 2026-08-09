@@ -1,1 +1,313 @@
-<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101820"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Order Alert"><link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png"><title>Order Alert v2</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.top{background:#101820;color:#fff;padding:18px 18px 20px;position:sticky;top:0;z-index:10}.top h1{margin:0;font-size:23px}.top p{margin:5px 0 0;opacity:.7;font-size:13px}.wrap{max-width:760px;margin:auto;padding:14px}.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1;border:0;border-radius:11px;padding:11px;background:#fff;font-weight:800}.tabs button.active{background:#101820;color:#fff}.panel,.metric{background:#fff;border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 2px 10px #0000000b}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{margin:0}.metric .n{font-size:24px;font-weight:900}.muted{color:#667085;font-size:13px}.badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}.red{background:#ffe0dc;color:#a61b12}.amber{background:#fff0bf;color:#725300}.blue{background:#e3efff;color:#175cd3}.green{background:#e3f5e8;color:#216e39}.line{padding:11px 0;border-bottom:1px solid #eee}.btn{width:100%;border:0;border-radius:10px;padding:12px;margin-top:8px;font-weight:800;font-size:15px;background:#101820;color:white}.btn.light{background:#edf1f4;color:#17202a}.btn.redbtn{background:#b42318}.select{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;font-size:15px}.hidden{display:none}.timeline{border-left:3px solid #d0d5dd;margin:10px 0 0 6px;padding-left:14px}.event{margin:0 0 14px}.event b{display:block}.notice{background:#eef6ff;border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}.qty{display:flex;gap:8px;align-items:center}.qty input{width:90px;padding:10px;border:1px solid #d0d5dd;border-radius:9px;font-size:16px}.toast{position:fixed;left:14px;right:14px;bottom:18px;background:#101820;color:#fff;padding:13px;border-radius:12px;display:none;z-index:20}.dangerbox{background:#fff0ee;border-left:5px solid #b42318;border-radius:12px;padding:13px}.okbox{background:#eaf7ee;border-left:5px solid #2e7d32;border-radius:12px;padding:13px}</style></head><body><header class="top"><h1>ORDER ALERT</h1><p>Demo v2 • COSYS picking discrepancy simulator</p></header><main class="wrap"><div class="tabs"><button id="agentTab" class="active" onclick="role('agent')">👤 Agent</button><button id="managerTab" onclick="role('manager')">💼 Manager</button><button id="warehouseTab" onclick="role('warehouse')">🏭 Depozit</button></div><section id="agent"><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Restaurant X • Agent A</div><div class="line"><b>Salam Premium</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnați Tradiționali</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" onclick="ack()" id="ackBtn">AM VĂZUT</button><button class="btn redbtn" onclick="verify()" id="verifyBtn">SOLICITĂ VERIFICARE</button><div id="agentMsg" class="muted" style="margin-top:8px"></div></div><div class="panel"><h3>Stadiul comenzii</h3><select class="select" id="stage" onchange="setStage(this.value)"><option value="introduced">Comandă introdusă</option><option value="confirmed">Confirmată de agent</option><option value="sent">Trimisă în depozit</option><option value="picking">Picking în curs</option><option value="picked">Picking finalizat</option><option value="difference" selected>Diferență detectată</option><option value="verification">Verificare solicitată</option><option value="resolved">Rezolvată</option></select></div></section><section id="manager" class="hidden"><div class="metrics"><div class="metric"><div class="muted">Comenzi</div><div class="n">21</div></div><div class="metric"><div class="muted">Incomplete</div><div class="n" id="managerIncomplete">3</div></div><div class="metric"><div class="muted">Critice</div><div class="n" id="managerCritical">1</div></div></div><div class="panel"><h2>Dashboard</h2><div class="line">Comenzi complete <b style="float:right">85,7%</b></div><div class="line">Produse cu diferențe <b style="float:right" id="diffProducts">2</b></div><div class="line">Verificări solicitate <b style="float:right" id="managerVerify">0</b></div></div><div class="panel"><h2>Istoric #12548</h2><div class="timeline" id="timeline"><div class="event">08:12 — <b>Agent a confirmat comanda</b></div><div class="event">08:17 — <b>Comanda a ajuns în depozit</b></div><div class="event">08:35 — <b>Picking început</b></div><div class="event">08:41 — <b>Diferență detectată</b></div></div></div></section><section id="warehouse" class="hidden"><div class="notice"><b>Simulator operator depozit</b><br>Modifică ce s-a găsit la picking. La finalizare, aplicația calculează automat diferența.</div><div class="panel"><h2>Comanda #12548</h2><div class="line"><b>Salam Premium</b><div class="qty"><span>Comandat 10 kg</span><input id="salamiInput" type="number" min="0" max="10" value="6"></div></div><div class="line"><b>Cârnați Tradiționali</b><div class="qty"><span>Comandat 6 kg</span><input id="sausageInput" type="number" min="0" max="6" value="0"></div></div><button class="btn" onclick="finishPicking()">FINALIZEAZĂ PICKING</button><button class="btn light" onclick="completeAll()">SIMULEAZĂ COMANDĂ COMPLETĂ</button><div id="warehouseMsg" class="muted" style="margin-top:9px"></div></div></section></main><div id="toast" class="toast"></div><script>let state={salami:6,sausage:0,stage:'difference',verified:false,ack:false};function role(r){['agent','manager','warehouse'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==r));['agentTab','managerTab','warehouseTab'].forEach(x=>document.getElementById(x).classList.remove('active'));document.getElementById(r+'Tab').classList.add('active');render()}function toast(t){let x=document.getElementById('toast');x.textContent=t;x.style.display='block';setTimeout(()=>x.style.display='none',2200)}function addEvent(t){let d=document.createElement('div');d.className='event';d.innerHTML=new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})+' — <b>'+t+'</b>';document.getElementById('timeline').appendChild(d)}function render(){let sm=Math.max(0,10-state.salami),ss=Math.max(0,6-state.sausage);document.getElementById('salamiPicked').textContent=state.salami+' kg';document.getElementById('salamiMissing').textContent=sm+' kg';document.getElementById('sausagePicked').textContent=state.sausage+' kg';document.getElementById('sausageMissing').textContent=ss+' kg';let incomplete=sm>0||ss>0;document.getElementById('alertCount').textContent=incomplete?1:0;document.getElementById('statusBadge').textContent=state.stage==='resolved'?'REZOLVATĂ':(incomplete?'DIFERENȚĂ DETECTATĂ':'COMPLETĂ');document.getElementById('statusBadge').className='badge '+(incomplete?'red':'green');document.getElementById('alertBox').className=incomplete?'dangerbox':'okbox';document.getElementById('alertBox').innerHTML=incomplete?'<b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.':'<b>🟢 COMANDĂ COMPLETĂ</b><br>Toate cantitățile au fost pregătite.';document.getElementById('verifyCount').textContent=state.verified?1:0;document.getElementById('managerVerify').textContent=state.verified?1:0;document.getElementById('stage').value=state.stage;document.getElementById('ackBtn').disabled=state.ack;document.getElementById('ackBtn').textContent=state.ack?'✓ ALERTĂ VĂZUTĂ':'AM VĂZUT';document.getElementById('verifyBtn').disabled=state.verified;document.getElementById('verifyBtn').textContent=state.verified?'✓ VERIFICARE SOLICITATĂ':'SOLICITĂ VERIFICARE'}function ack(){state.ack=true;document.getElementById('agentMsg').textContent='Alerta a fost confirmată de agent.';toast('Alertă marcată ca văzută');addEvent('Agent a văzut alerta');render()}function verify(){state.verified=true;state.stage='verification';document.getElementById('agentMsg').textContent='Depozitul a fost notificat pentru reverificare.';toast('Verificare solicitată către depozit');addEvent('Agent a solicitat verificare');render()}function setStage(v){state.stage=v;addEvent('Stadiu schimbat: '+document.getElementById('stage').selectedOptions[0].text);toast('Stadiu actualizat');render()}function finishPicking(){state.salami=Math.max(0,Math.min(10,Number(document.getElementById('salamiInput').value)||0));state.sausage=Math.max(0,Math.min(6,Number(document.getElementById('sausageInput').value)||0));state.stage=(state.salami===10&&state.sausage===6)?'resolved':'difference';state.verified=false;state.ack=false;document.getElementById('warehouseMsg').textContent='Picking finalizat. Diferențele au fost calculate automat.';addEvent('Depozit a finalizat picking-ul');toast('Picking finalizat');render()}function completeAll(){document.getElementById('salamiInput').value=10;document.getElementById('sausageInput').value=6;finishPicking()}render();</script><script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}</script></body></html>
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101820"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Order Alert"><link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png"><title>Order Alert v2</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.top{background:#101820;color:#fff;padding:18px 18px 20px;position:sticky;top:0;z-index:10}.top h1{margin:0;font-size:23px}.top p{margin:5px 0 0;opacity:.7;font-size:13px}.wrap{max-width:760px;margin:auto;padding:14px}.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1;border:0;border-radius:11px;padding:11px;background:#fff;font-weight:800;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.tabs button.active{background:#101820;color:#fff}.panel,.metric{background:#fff;border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 2px 10px #0000000b}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{margin:0}.metric .n{font-size:24px;font-weight:900}.muted{color:#667085;font-size:13px}.badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}.red{background:#ffe0dc;color:#a61b12}.amber{background:#fff0bf;color:#725300}.blue{background:#e3efff;color:#175cd3}.green{background:#e3f5e8;color:#216e39}.line{padding:11px 0;border-bottom:1px solid #eee}.btn{width:100%;border:0;border-radius:10px;padding:12px;margin-top:8px;font-weight:800;font-size:15px;background:#101820;color:white}.btn.light{background:#edf1f4;color:#17202a}.btn.redbtn{background:#b42318}.select{width:100%;padding:12px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;font-size:15px}.hidden{display:none}.timeline{border-left:3px solid #d0d5dd;margin:10px 0 0 6px;padding-left:14px}.event{margin:0 0 14px}.event b{display:block}.notice{background:#eef6ff;border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}.qty{display:flex;gap:8px;align-items:center}.qty input{width:90px;padding:10px;border:1px solid #d0d5dd;border-radius:9px;font-size:16px}.toast{position:fixed;left:14px;right:14px;bottom:18px;background:#101820;color:#fff;padding:13px;border-radius:12px;display:none;z-index:20}.dangerbox{background:#fff0ee;border-left:5px solid #b42318;border-radius:12px;padding:13px}.okbox{background:#eaf7ee;border-left:5px solid #2e7d32;border-radius:12px;padding:13px}</style></head><body><header class="top"><h1>ORDER ALERT</h1><p>Demo v2 • COSYS picking discrepancy simulator</p></header><main class="wrap"><div class="tabs" role="tablist"><button type="button" id="agentTab" class="active" data-role="agent">👤 Agent</button><button type="button" id="managerTab" data-role="manager">💼 Manager</button><button type="button" id="warehouseTab" data-role="warehouse">🏭 Depozit</button></div><section id="agent"><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Restaurant X • Agent A</div><div class="line"><b>Salam Premium</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnați Tradiționali</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" id="ackBtn" type="button">AM VĂZUT</button><button class="btn redbtn" id="verifyBtn" type="button">SOLICITĂ VERIFICARE</button><div id="agentMsg" class="muted" style="margin-top:8px"></div></div><div class="panel"><h3>Stadiul comenzii</h3><select class="select" id="stage"><option value="introduced">Comandă introdusă</option><option value="confirmed">Confirmată de agent</option><option value="sent">Trimisă în depozit</option><option value="picking">Picking în curs</option><option value="picked">Picking finalizat</option><option value="difference" selected>Diferență detectată</option><option value="verification">Verificare solicitată</option><option value="resolved">Rezolvată</option></select></div></section><section id="manager" class="hidden"><div class="metrics"><div class="metric"><div class="muted">Comenzi</div><div class="n">21</div></div><div class="metric"><div class="muted">Incomplete</div><div class="n" id="managerIncomplete">3</div></div><div class="metric"><div class="muted">Critice</div><div class="n" id="managerCritical">1</div></div></div><div class="panel"><h2>Dashboard</h2><div class="line">Comenzi complete <b style="float:right">85,7%</b></div><div class="line">Produse cu diferențe <b style="float:right" id="diffProducts">2</b></div><div class="line">Verificări solicitate <b style="float:right" id="managerVerify">0</b></div></div><div class="panel"><h2>Istoric #12548</h2><div class="timeline" id="timeline"><div class="event">08:12 — <b>Agent a confirmat comanda</b></div><div class="event">08:17 — <b>Comanda a ajuns în depozit</b></div><div class="event">08:35 — <b>Picking început</b></div><div class="event">08:41 — <b>Diferență detectată</b></div></div></div></section><section id="warehouse" class="hidden"><div class="notice"><b>Simulator operator depozit</b><br>Modifică ce s-a găsit la picking. La finalizare, aplicația calculează automat diferența.</div><div class="panel"><h2>Comanda #12548</h2><div class="line"><b>Salam Premium</b><div class="qty"><span>Comandat 10 kg</span><input id="salamiInput" type="number" min="0" max="10" value="6"></div></div><div class="line"><b>Cârnați Tradiționali</b><div class="qty"><span>Comandat 6 kg</span><input id="sausageInput" type="number" min="0" max="6" value="0"></div></div><button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button><button class="btn light" id="completeAllBtn" type="button">SIMULEAZĂ COMANDĂ COMPLETĂ</button><div id="warehouseMsg" class="muted" style="margin-top:9px"></div></div></section></main><div id="toast" class="toast"></div><script>
+const state = {
+  salami: 6,
+  sausage: 0,
+  stage: 'difference',
+  verified: false,
+  ack: false
+};
+
+const $ = (id) => document.getElementById(id);
+
+function showRole(r, updateUrl = true) {
+  ['agent','manager','warehouse'].forEach(x => {
+    const el = $(x);
+    if (el) el.classList.toggle('hidden', x !== r);
+  });
+  ['agentTab','managerTab','warehouseTab'].forEach(x => {
+    const el = $(x);
+    if (el) el.classList.toggle('active', x === r + 'Tab');
+  });
+  if (updateUrl) {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set('role', r);
+      history.replaceState(null, '', u.toString());
+    } catch (_) {}
+  }
+  render();
+}
+
+function toast(t) {
+  const x = $('toast');
+  x.textContent = t;
+  x.style.display = 'block';
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => x.style.display = 'none', 2200);
+}
+
+function addEvent(t) {
+  const d = document.createElement('div');
+  d.className = 'event';
+  d.innerHTML =
+    new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) +
+    ' — <b>' + t + '</b>';
+  $('timeline').appendChild(d);
+}
+
+function render() {
+  const sm = Math.max(0, 10 - state.salami);
+  const ss = Math.max(0, 6 - state.sausage);
+  $('salamiPicked').textContent = state.salami + ' kg';
+  $('salamiMissing').textContent = sm + ' kg';
+  $('sausagePicked').textContent = state.sausage + ' kg';
+  $('sausageMissing').textContent = ss + ' kg';
+
+  const incomplete = sm > 0 || ss > 0;
+  $('alertCount').textContent = incomplete ? 1 : 0;
+  $('statusBadge').textContent =
+    state.stage === 'resolved' ? 'REZOLVATĂ' :
+    incomplete ? 'DIFERENȚĂ DETECTATĂ' : 'COMPLETĂ';
+  $('statusBadge').className = 'badge ' + (incomplete ? 'red' : 'green');
+  $('alertBox').className = incomplete ? 'dangerbox' : 'okbox';
+  $('alertBox').innerHTML = incomplete
+    ? '<b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.'
+    : '<b>🟢 COMANDĂ COMPLETĂ</b><br>Toate cantitățile au fost pregătite.';
+  $('verifyCount').textContent = state.verified ? 1 : 0;
+  $('managerVerify').textContent = state.verified ? 1 : 0;
+  $('stage').value = state.stage;
+  $('ackBtn').disabled = state.ack;
+  $('ackBtn').textContent = state.ack ? '✓ ALERTĂ VĂZUTĂ' : 'AM VĂZUT';
+  $('verifyBtn').disabled = state.verified;
+  $('verifyBtn').textContent = state.verified ? '✓ VERIFICARE SOLICITATĂ' : 'SOLICITĂ VERIFICARE';
+}
+
+function ack() {
+  state.ack = true;
+  $('agentMsg').textContent = 'Alerta a fost confirmată de agent.';
+  toast('Alertă marcată ca văzută');
+  addEvent('Agent a văzut alerta');
+  render();
+}
+
+function verify() {
+  state.verified = true;
+  state.stage = 'verification';
+  $('agentMsg').textContent = 'Depozitul a fost notificat pentru reverificare.';
+  toast('Verificare solicitată către depozit');
+  addEvent('Agent a solicitat verificare');
+  render();
+}
+
+function setStage(v) {
+  state.stage = v;
+  const selected = $('stage').selectedOptions[0];
+  addEvent('Stadiu schimbat: ' + selected.text);
+  toast('Stadiu actualizat');
+  render();
+}
+
+function finishPicking() {
+  state.salami = Math.max(0, Math.min(10, Number($('salamiInput').value) || 0));
+  state.sausage = Math.max(0, Math.min(6, Number($('sausageInput').value) || 0));
+  state.stage = (state.salami === 10 && state.sausage === 6) ? 'resolved' : 'difference';
+  state.verified = false;
+  state.ack = false;
+  $('warehouseMsg').textContent = 'Picking finalizat. Diferențele au fost calculate automat.';
+  addEvent('Depozit a finalizat picking-ul');
+  toast('Picking finalizat');
+  render();
+}
+
+function completeAll() {
+  $('salamiInput').value = 10;
+  $('sausageInput').value = 6;
+  finishPicking();
+}
+
+function bindEvents() {
+  document.querySelectorAll('[data-role]').forEach(btn => {
+    btn.addEventListener('click', () => showRole(btn.dataset.role));
+    btn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      showRole(btn.dataset.role);
+    }, {passive:false});
+  });
+
+  $('ackBtn').addEventListener('click', ack);
+  $('verifyBtn').addEventListener('click', verify);
+  $('stage').addEventListener('change', e => setStage(e.target.value));
+  $('finishPickingBtn').addEventListener('click', finishPicking);
+  $('completeAllBtn').addEventListener('click', completeAll);
+
+  // Allow direct demo links such as ?role=manager or ?role=warehouse.
+  const roleParam = new URLSearchParams(location.search).get('role');
+  if (['agent','manager','warehouse'].includes(roleParam)) {
+    showRole(roleParam, false);
+  } else {
+    showRole('agent', false);
+  }
+}
+
+function registerPWA() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    registerPWA();
+  });
+} else {
+  bindEvents();
+  registerPWA();
+}
+</script><script>
+const state = {
+  salami: 6,
+  sausage: 0,
+  stage: 'difference',
+  verified: false,
+  ack: false
+};
+
+const $ = (id) => document.getElementById(id);
+
+function showRole(r, updateUrl = true) {
+  ['agent','manager','warehouse'].forEach(x => {
+    const el = $(x);
+    if (el) el.classList.toggle('hidden', x !== r);
+  });
+  ['agentTab','managerTab','warehouseTab'].forEach(x => {
+    const el = $(x);
+    if (el) el.classList.toggle('active', x === r + 'Tab');
+  });
+  if (updateUrl) {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set('role', r);
+      history.replaceState(null, '', u.toString());
+    } catch (_) {}
+  }
+  render();
+}
+
+function toast(t) {
+  const x = $('toast');
+  x.textContent = t;
+  x.style.display = 'block';
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => x.style.display = 'none', 2200);
+}
+
+function addEvent(t) {
+  const d = document.createElement('div');
+  d.className = 'event';
+  d.innerHTML =
+    new Date().toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'}) +
+    ' — <b>' + t + '</b>';
+  $('timeline').appendChild(d);
+}
+
+function render() {
+  const sm = Math.max(0, 10 - state.salami);
+  const ss = Math.max(0, 6 - state.sausage);
+  $('salamiPicked').textContent = state.salami + ' kg';
+  $('salamiMissing').textContent = sm + ' kg';
+  $('sausagePicked').textContent = state.sausage + ' kg';
+  $('sausageMissing').textContent = ss + ' kg';
+
+  const incomplete = sm > 0 || ss > 0;
+  $('alertCount').textContent = incomplete ? 1 : 0;
+  $('statusBadge').textContent =
+    state.stage === 'resolved' ? 'REZOLVATĂ' :
+    incomplete ? 'DIFERENȚĂ DETECTATĂ' : 'COMPLETĂ';
+  $('statusBadge').className = 'badge ' + (incomplete ? 'red' : 'green');
+  $('alertBox').className = incomplete ? 'dangerbox' : 'okbox';
+  $('alertBox').innerHTML = incomplete
+    ? '<b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.'
+    : '<b>🟢 COMANDĂ COMPLETĂ</b><br>Toate cantitățile au fost pregătite.';
+  $('verifyCount').textContent = state.verified ? 1 : 0;
+  $('managerVerify').textContent = state.verified ? 1 : 0;
+  $('stage').value = state.stage;
+  $('ackBtn').disabled = state.ack;
+  $('ackBtn').textContent = state.ack ? '✓ ALERTĂ VĂZUTĂ' : 'AM VĂZUT';
+  $('verifyBtn').disabled = state.verified;
+  $('verifyBtn').textContent = state.verified ? '✓ VERIFICARE SOLICITATĂ' : 'SOLICITĂ VERIFICARE';
+}
+
+function ack() {
+  state.ack = true;
+  $('agentMsg').textContent = 'Alerta a fost confirmată de agent.';
+  toast('Alertă marcată ca văzută');
+  addEvent('Agent a văzut alerta');
+  render();
+}
+
+function verify() {
+  state.verified = true;
+  state.stage = 'verification';
+  $('agentMsg').textContent = 'Depozitul a fost notificat pentru reverificare.';
+  toast('Verificare solicitată către depozit');
+  addEvent('Agent a solicitat verificare');
+  render();
+}
+
+function setStage(v) {
+  state.stage = v;
+  const selected = $('stage').selectedOptions[0];
+  addEvent('Stadiu schimbat: ' + selected.text);
+  toast('Stadiu actualizat');
+  render();
+}
+
+function finishPicking() {
+  state.salami = Math.max(0, Math.min(10, Number($('salamiInput').value) || 0));
+  state.sausage = Math.max(0, Math.min(6, Number($('sausageInput').value) || 0));
+  state.stage = (state.salami === 10 && state.sausage === 6) ? 'resolved' : 'difference';
+  state.verified = false;
+  state.ack = false;
+  $('warehouseMsg').textContent = 'Picking finalizat. Diferențele au fost calculate automat.';
+  addEvent('Depozit a finalizat picking-ul');
+  toast('Picking finalizat');
+  render();
+}
+
+function completeAll() {
+  $('salamiInput').value = 10;
+  $('sausageInput').value = 6;
+  finishPicking();
+}
+
+function bindEvents() {
+  document.querySelectorAll('[data-role]').forEach(btn => {
+    btn.addEventListener('click', () => showRole(btn.dataset.role));
+    btn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      showRole(btn.dataset.role);
+    }, {passive:false});
+  });
+
+  $('ackBtn').addEventListener('click', ack);
+  $('verifyBtn').addEventListener('click', verify);
+  $('stage').addEventListener('change', e => setStage(e.target.value));
+  $('finishPickingBtn').addEventListener('click', finishPicking);
+  $('completeAllBtn').addEventListener('click', completeAll);
+
+  // Allow direct demo links such as ?role=manager or ?role=warehouse.
+  const roleParam = new URLSearchParams(location.search).get('role');
+  if (['agent','manager','warehouse'].includes(roleParam)) {
+    showRole(roleParam, false);
+  } else {
+    showRole('agent', false);
+  }
+}
+
+function registerPWA() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    registerPWA();
+  });
+} else {
+  bindEvents();
+  registerPWA();
+}
+</script></body></html>
