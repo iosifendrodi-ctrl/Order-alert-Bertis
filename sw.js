@@ -1,4 +1,4 @@
-const CACHE='order-alert-v11-4-shared-state';
+const CACHE='order-alert-v11-5-shared-state';
 const ASSETS=['/','/index.html','/manifest.json','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];
 const SYNC_KEY='oa_shared_sync_v1';
 
@@ -12,13 +12,13 @@ self.addEventListener('activate',event=>{
 
 async function transformIndex(response){
   const html=await response.text();
-  if(html.includes('OA_SHARED_STATE_PATCH_V1')) return new Response(html,{status:response.status,headers:{'Content-Type':'text/html; charset=utf-8'}});
+  if(html.includes('OA_SHARED_STATE_PATCH_V2')) return new Response(html,{status:response.status,headers:{'Content-Type':'text/html; charset=utf-8'}});
 
   let out=html;
 
   out=out.replace(
     "const state = {\n  salami: 6,\n  sausage: 0,\n  stage: 'difference',",
-    "const OA_SHARED_STATE_PATCH_V1=true;\nconst OA_SHARED_KEY='oa_shared_sync_v1';\nfunction OA_sharedLoad(){try{return JSON.parse(localStorage.getItem(OA_SHARED_KEY)||'{}')}catch(_){return {}}}\nconst OA_shared=OA_sharedLoad();\nconst state = {\n  salami: Number.isFinite(Number(OA_shared.salami)) ? Number(OA_shared.salami) : 6,\n  sausage: Number.isFinite(Number(OA_shared.sausage)) ? Number(OA_shared.sausage) : 0,\n  stage: OA_shared.stage || 'difference',"
+    "const OA_SHARED_STATE_PATCH_V2=true;\nconst OA_SHARED_KEY='oa_shared_sync_v1';\nfunction OA_sharedLoad(){try{return JSON.parse(localStorage.getItem(OA_SHARED_KEY)||'{}')}catch(_){return {}}}\nconst OA_shared=OA_sharedLoad();\nconst state = {\n  salami: Number.isFinite(Number(OA_shared.salami)) ? Number(OA_shared.salami) : 6,\n  sausage: Number.isFinite(Number(OA_shared.sausage)) ? Number(OA_shared.sausage) : 0,\n  stage: OA_shared.stage || 'difference',"
   );
 
   out=out.replace(
@@ -28,7 +28,7 @@ async function transformIndex(response){
 
   const patch=`
 <script>
-/* OA_SHARED_STATE_PATCH_V1 — vendor-neutral shared demo state */
+/* OA_SHARED_STATE_PATCH_V2 — vendor-neutral shared demo state + verification confirmation */
 (function(){
   const KEY='oa_shared_sync_v1';
 
@@ -41,6 +41,7 @@ async function transformIndex(response){
       const role=new URLSearchParams(location.search).get('role') || 'agent';
       if(role!=='warehouse') return;
 
+      const statusText=document.getElementById('warehouseVerificationStatus')?.textContent || '';
       const s={
         salami:Number(document.getElementById('salamiInput')?.value ?? 6),
         sausage:Number(document.getElementById('sausageInput')?.value ?? 0),
@@ -51,12 +52,13 @@ async function transformIndex(response){
         closed:!!document.getElementById('closedPanel') &&
           !document.getElementById('closedPanel').classList.contains('hidden'),
         ack:document.getElementById('ackBtn')?.textContent?.includes('ALERTĂ VĂZUTĂ') || false,
-        warehouseAcknowledged:
-          document.getElementById('warehouseVerificationStatus')?.textContent?.includes('REVERIFICARE CONFIRMATĂ') || false,
+        warehouseAcknowledged:statusText.includes('REVERIFICARE CONFIRMATĂ') ||
+          document.getElementById('warehouseAcknowledgeBtn')?.textContent?.includes('REVERIFICARE CONFIRMATĂ') || false,
         updatedAt:Date.now()
       };
 
-      localStorage.setItem(KEY,JSON.stringify(s));
+      const old=read();
+      localStorage.setItem(KEY,JSON.stringify({...old,...s}));
     }catch(_){}
   }
 
@@ -70,13 +72,32 @@ async function transformIndex(response){
     }catch(_){}
   }
 
+  function syncAgentVerificationStatus(){
+    try{
+      const role=new URLSearchParams(location.search).get('role') || 'agent';
+      if(role!=='agent') return;
+      const s=read();
+      const msg=document.getElementById('agentMsg');
+      if(!msg) return;
+      if(s.warehouseAcknowledged===true){
+        msg.textContent='Depozitul a confirmat reverificarea.';
+        msg.style.color='#287a43';
+        msg.style.fontWeight='800';
+      }else if(s.verified===true){
+        msg.textContent='Depozitul a fost notificat pentru reverificare.';
+        msg.style.color='';
+        msg.style.fontWeight='';
+      }
+    }catch(_){}
+  }
+
   function persistAgentState(){
     try{
       const old=read();
       const stage=document.getElementById('stage')?.value || old.stage || 'difference';
       const verified=
         document.getElementById('verifyBtn')?.textContent?.includes('VERIFICARE SOLICITATĂ') ||
-        stage==='verification';
+        stage==='verification' || old.verified===true;
       const resolved=stage==='resolved';
       const closed=!!document.getElementById('closedPanel') &&
         !document.getElementById('closedPanel').classList.contains('hidden');
@@ -89,6 +110,7 @@ async function transformIndex(response){
         closed,
         updatedAt:Date.now()
       }));
+      syncAgentVerificationStatus();
     }catch(_){}
   }
 
@@ -100,7 +122,7 @@ async function transformIndex(response){
 
       ['finishPickingBtn','completeAllBtn','warehouseAcknowledgeBtn'].forEach(id=>{
         const e=document.getElementById(id);
-        if(e) e.addEventListener('click',()=>setTimeout(writeWarehouseState,50));
+        if(e) e.addEventListener('click',()=>setTimeout(writeWarehouseState,100));
       });
 
       setInterval(writeWarehouseState,500);
@@ -110,6 +132,7 @@ async function transformIndex(response){
         const e=document.getElementById(id);
         if(e) e.addEventListener('click',()=>setTimeout(persistAgentState,50));
       });
+      syncAgentVerificationStatus();
     }
   }
 
