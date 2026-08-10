@@ -1,65 +1,66 @@
 {% extends "base.html" %}{% block content %}
 <div class="wrap">
-<a href="/">← Dashboard</a> · <a href="/history">Istoric comenzi</a>
-<h1>{{o.external_id}}</h1>
-<p class="muted">{{o.customer}} • {{o.agent}} • {{o.status}}</p>
+  <a href="/">← Dashboard</a> · <a href="/history">Istoric comenzi</a>
+  <h1>{{ o.external_id }}</h1>
+  <p class="muted">{{ o.customer }} • {{ o.agent }} • {{ o.status }}</p>
 
-{% if o.status == 'CLOSED' %}
-<div class="panel"><span class="badge ok">ÎNCHISĂ</span>
-<p><strong>Închisă la:</strong> {{o.closed_at}}<br><strong>Închisă de:</strong> {{o.closed_by}}<br>
-<strong>Observație:</strong> {{o.resolution_note or '—'}}</p></div>
-{% endif %}
-
-{% if alert %}
-<div class="alertbox"><strong>{{alert.title}}</strong><br><br>{{alert.message}}<br><br>
-{% if alert.acknowledged_at %}<span class="badge ok">Agent a văzut alerta</span>{% else %}
-<form method="post" action="/alert/{{alert.id}}/ack" style="display:inline"><button class="btn secondary">AM VĂZUT</button></form>{% endif %}
-{% if alert.verification_requested_at %}<span class="badge warn">Verificare solicitată</span>{% else %}
-<form method="post" action="/alert/{{alert.id}}/verify" style="display:inline"><button class="btn danger">SOLICITĂ VERIFICARE</button></form>{% endif %}
-{% if alert.resolved_at %}<span class="badge ok">Verificare rezolvată</span>{% endif %}
-</div>
-{% else %}<div class="panel"><span class="badge ok">Comandă completă / fără alertă</span></div>{% endif %}
-
-<div class="panel"><h2>Linii comandă</h2>
-{% for l in lines %}<div class="line"><strong>{{l.product_name}}</strong><br>
-Comandat: {{l.ordered:g}} {{l.unit}} &nbsp; | &nbsp; Pregătit: {{l.picked:g}} {{l.unit}} &nbsp; | &nbsp; Diferență: {{(l.ordered-l.picked):g}} {{l.unit}}</div>{% endfor %}
-</div>
-
-{% if alert and not alert.resolved_at and o.status != 'CLOSED' %}
-<div class="panel"><h2>Rezolvare depozit</h2>
-<form method="post" action="/verification/{{alert.id}}/resolve">
-<select class="input" name="reason"><option>Stoc insuficient</option><option>Produs indisponibil</option><option>Eroare picking</option><option>Produs deteriorat</option><option>Înlocuire produs</option><option>Eroare scanare</option><option>Alt motiv</option></select>
-<input class="input" name="note" placeholder="Observații">
-<button class="btn">Închide verificarea</button></form></div>{% endif %}
-
-{% if o.status != 'CLOSED' %}
-<div class="panel"><h2>Închidere comandă</h2>
-{% if alert and not alert.resolved_at %}
-<p class="muted">Mai întâi trebuie rezolvată verificarea alertei.</p>
-{% else %}
-<form method="post" action="/order/{{o.id}}/close" onsubmit="return confirm('Închizi această comandă? Datele vor rămâne în Istoric.');">
-<input class="input" name="closed_by" value="management" placeholder="Închisă de">
-<input class="input" name="resolution_note" placeholder="Observație / rezoluție">
-<button class="btn danger">ÎNCHIDE COMANDA</button></form>
-{% endif %}</div>{% endif %}
-
-<div class="panel"><h2>Audit trail</h2>
-{% for a in audit %}<div class="line"><strong>{{a.created_at}}</strong> — {{a.event}} — {{a.actor}}<br><span class="muted">{{a.details}}</span></div>
-{% else %}<p class="muted">Nu există evenimente.</p>{% endfor %}</div>
-</div>{% endblock %}
-<section class="order-close-panel" style="margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:12px">
-  <h3>Închiderea comenzii</h3>
-  {% if order.status|default('active') != 'closed' %}
-  <form method="post" action="{{ url_for('close_order', order_id=order.id) }}"
-        onsubmit="return confirm('Închizi această comandă? Datele de picking și alerta vor fi păstrate în Istoric.');">
-    <label for="closed_by">Închisă de</label>
-    <input id="closed_by" name="closed_by" required placeholder="Nume utilizator">
-    <label for="resolution_note">Observație / rezoluție</label>
-    <textarea id="resolution_note" name="resolution_note" rows="3"
-              placeholder="Observație privind rezolvarea comenzii"></textarea>
-    <button type="submit" class="btn btn-danger">ÎNCHIDE COMANDA</button>
-  </form>
-  {% else %}
-  <div class="alert alert-success">Comanda este deja închisă.</div>
+  {% if o.status == 'CLOSED' %}
+  <div class="panel">
+    <span class="badge ok">ÎNCHISĂ • READ-ONLY</span>
+    <p><strong>Închisă la:</strong> {{ o.closed_at }}<br>
+    <strong>Închisă de:</strong> {{ o.closed_by }}<br>
+    <strong>Observație:</strong> {{ o.resolution_note or '—' }}</p>
+    <p class="muted">Această comandă este închisă. Datele istorice provin din snapshot-ul de la închidere și nu mai pot fi modificate.</p>
+  </div>
   {% endif %}
-</section>
+
+  {% if alert %}
+  <div class="alertbox">
+    <strong>{{ alert.title }}</strong><br><br>{{ alert.message }}<br><br>
+    {% if alert.acknowledged_at %}<span class="badge ok">Agent a văzut alerta</span>
+    {% elif o.status != 'CLOSED' %}<form method="post" action="/alert/{{ alert.id }}/ack" style="display:inline"><button class="btn secondary">AM VĂZUT</button></form>{% endif %}
+    {% if alert.verification_requested_at %}<span class="badge warn">Verificare solicitată</span>
+    {% elif o.status != 'CLOSED' %}<form method="post" action="/alert/{{ alert.id }}/verify" style="display:inline"><button class="btn danger">SOLICITĂ VERIFICARE</button></form>{% endif %}
+    {% if alert.resolved_at %}<span class="badge ok">Verificare rezolvată</span>{% endif %}
+  </div>
+  {% else %}<div class="panel"><span class="badge ok">Comandă completă / fără alertă</span></div>{% endif %}
+
+  <div class="panel"><h2>Linii comandă</h2>
+    {% for l in lines %}<div class="line"><strong>{{ l.product_name }}</strong><br>
+    Comandat: {{ l.ordered:g }} {{ l.unit }} &nbsp; | &nbsp; Pregătit: {{ l.picked:g }} {{ l.unit }} &nbsp; | &nbsp; Diferență: {{ (l.ordered-l.picked):g }} {{ l.unit }}</div>{% endfor %}
+  </div>
+
+  {% if alert and alert.resolved_at and o.status == 'CLOSED' %}
+  <div class="panel"><span class="badge ok">Verificare rezolvată înainte de închidere</span></div>
+  {% endif %}
+
+  {% if alert and not alert.resolved_at and o.status != 'CLOSED' %}
+  <div class="panel"><h2>Rezolvare depozit</h2>
+    <form method="post" action="/verification/{{ alert.id }}/resolve">
+      <select class="input" name="reason"><option>Stoc insuficient</option><option>Produs indisponibil</option><option>Eroare picking</option><option>Produs deteriorat</option><option>Înlocuire produs</option><option>Eroare scanare</option><option>Alt motiv</option></select>
+      <input class="input" name="note" placeholder="Observații">
+      <button class="btn">Închide verificarea</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if o.status != 'CLOSED' %}
+  <div class="panel"><h2>Închidere comandă</h2>
+    {% if alert and not alert.resolved_at %}
+      <p class="muted">Mai întâi trebuie rezolvată verificarea alertei.</p>
+    {% else %}
+      <form method="post" action="/order/{{ o.id }}/close" onsubmit="return confirm('Închizi această comandă? După închidere, comanda devine read-only și intră în Istoric.');">
+        <input class="input" name="closed_by" required autocomplete="name" placeholder="Închisă de">
+        <input class="input" name="resolution_note" placeholder="Observație / rezoluție">
+        <button class="btn danger">ÎNCHIDE COMANDA</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="panel"><h2>Audit trail</h2>
+    {% for a in audit %}<div class="line"><strong>{{ a.created_at }}</strong> — {{ a.event }} — {{ a.actor }}<br><span class="muted">{{ a.details }}</span></div>
+    {% else %}<p class="muted">Nu există evenimente.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

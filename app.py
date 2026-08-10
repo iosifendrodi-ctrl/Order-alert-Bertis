@@ -35,6 +35,19 @@ def db_one(sql, params=()):
 def db_exec(sql, params=()):
     c=conn(); cur=c.execute(sql,params); c.commit(); last=cur.lastrowid; c.close(); return last
 
+def db_txn(fn):
+    """Run a group of database operations atomically in one SQLite transaction."""
+    c=conn()
+    try:
+        result=fn(c)
+        c.commit()
+        return result
+    except Exception:
+        c.rollback()
+        raise
+    finally:
+        c.close()
+
 def now():
     return datetime.now().isoformat(timespec="seconds")
 
@@ -71,6 +84,17 @@ def init_db():
     CREATE TABLE IF NOT EXISTS audit (
       id INTEGER PRIMARY KEY, order_id INTEGER, event TEXT,
       actor TEXT, details TEXT, created_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS order_history (
+      id INTEGER PRIMARY KEY,
+      order_id INTEGER UNIQUE NOT NULL,
+      external_id TEXT NOT NULL,
+      closed_at TEXT NOT NULL,
+      closed_by TEXT NOT NULL,
+      resolution_note TEXT,
+      snapshot_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(order_id) REFERENCES orders(id)
     );
     """)
     # v11.1 migration: preserve existing databases while adding order lifecycle fields.
@@ -192,8 +216,19 @@ def dashboard():
 def order(order_id):
     evaluate_order(order_id)
     o=db_one("SELECT * FROM orders WHERE id=?",(order_id,))
-    lines=cosys.get_order_lines(order_id)
-    alert=db_one("SELECT * FROM alerts WHERE order_id=?",(order_id,))
+    if not o:
+        return redirect(url_for("dashboard"))
+    history_row=db_one("SELECT * FROM order_history WHERE order_id=?",(order_id,)) if o["status"]=="CLOSED" else None
+    if history_row:
+        snap=json.loads(history_row["snapshot_json"])
+        so=dict(snap.get("order",{}))
+        so.update({"id":order_id,"external_id":history_row["external_id"],"closed_at":history_row["closed_at"],"closed_by":history_row["closed_by"],"resolution_note":history_row["resolution_note"],"status":"CLOSED"})
+        o=so
+        lines=snap.get("lines",[])
+        alert=snap.get("alert")
+    else:
+        lines=cosys.get_order_lines(order_id)
+        alert=db_one("SELECT * FROM alerts WHERE order_id=?",(order_id,))
     audit=db_all("SELECT * FROM audit WHERE order_id=? ORDER BY id", (order_id,))
     return render_template("order.html",o=o,lines=lines,alert=alert,audit=audit)
 
@@ -201,60 +236,119 @@ def order(order_id):
 def ack(alert_id):
     a=db_one("SELECT * FROM alerts WHERE id=?",(alert_id,))
     if a:
-        db_exec("UPDATE alerts SET acknowledged_at=? WHERE id=?",(now(),alert_id))
+        o=db_one("SELECT status FROM orders WHERE id=?",(a["order_id"],))
+        if not o or o["status"]=="CLOSED":
+            return redirect(url_for("order",order_id=a["order_id"]))
+        ts=now()
+        db_exec("UPDATE alerts SET acknowledged_at=? WHERE id=?",(ts,alert_id))
         db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
-                (a["order_id"],"ALERT_ACKNOWLEDGED","agent","Agent marked alert as seen",now()))
-    return redirect(url_for("order",order_id=a["order_id"]))
+                (a["order_id"],"ALERT_ACKNOWLEDGED","agent","Agent marked alert as seen",ts))
+    return redirect(url_for("order",order_id=a["order_id"])) if a else redirect(url_for("dashboard"))
 
 @app.post("/alert/<int:alert_id>/verify")
 def verify(alert_id):
     a=db_one("SELECT * FROM alerts WHERE id=?",(alert_id,))
     if a:
-        db_exec("UPDATE alerts SET verification_requested_at=? WHERE id=?",(now(),alert_id))
+        o=db_one("SELECT status FROM orders WHERE id=?",(a["order_id"],))
+        if not o or o["status"]=="CLOSED":
+            return redirect(url_for("order",order_id=a["order_id"]))
+        ts=now()
+        db_exec("UPDATE alerts SET verification_requested_at=? WHERE id=?",(ts,alert_id))
         db_exec("INSERT INTO verifications(alert_id,reason,note,created_at) VALUES(?,?,?,?)",
-                (alert_id,"REQUESTED","Agent requested warehouse verification",now()))
+                (alert_id,"REQUESTED","Agent requested warehouse verification",ts))
         db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
-                (a["order_id"],"VERIFICATION_REQUESTED","agent","Warehouse verification requested",now()))
-    return redirect(url_for("order",order_id=a["order_id"]))
+                (a["order_id"],"VERIFICATION_REQUESTED","agent","Warehouse verification requested",ts))
+    return redirect(url_for("order",order_id=a["order_id"])) if a else redirect(url_for("dashboard"))
 
 @app.post("/verification/<int:alert_id>/resolve")
 def resolve(alert_id):
     a=db_one("SELECT * FROM alerts WHERE id=?",(alert_id,))
     if a:
-        reason=request.form.get("reason","Other")
-        note=request.form.get("note","")
-        db_exec("UPDATE alerts SET resolved_at=? WHERE id=?",(now(),alert_id))
+        o=db_one("SELECT status FROM orders WHERE id=?",(a["order_id"],))
+        if not o or o["status"]=="CLOSED":
+            return redirect(url_for("order",order_id=a["order_id"]))
+        reason=request.form.get("reason","Other").strip() or "Other"
+        note=request.form.get("note","").strip()
+        ts=now()
+        db_exec("UPDATE alerts SET resolved_at=? WHERE id=?",(ts,alert_id))
         db_exec("UPDATE verifications SET reason=?,note=?,resolved_at=? WHERE alert_id=? AND resolved_at IS NULL",
-                (reason,note,now(),alert_id))
+                (reason,note,ts,alert_id))
         db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
-                (a["order_id"],"VERIFICATION_RESOLVED","warehouse",f"{reason}: {note}",now()))
-    return redirect(url_for("order",order_id=a["order_id"]))
-
+                (a["order_id"],"VERIFICATION_RESOLVED","warehouse",f"{reason}: {note}".strip(),ts))
+    return redirect(url_for("order",order_id=a["order_id"])) if a else redirect(url_for("dashboard"))
 
 @app.post("/order/<int:order_id>/close")
 def close_order(order_id):
+    """Close an order and persist an immutable JSON snapshot atomically."""
     o=db_one("SELECT * FROM orders WHERE id=?",(order_id,))
     if not o:
         return redirect(url_for("dashboard"))
     if o["status"]=="CLOSED":
         return redirect(url_for("order", order_id=order_id))
+
     alert=db_one("SELECT * FROM alerts WHERE order_id=?",(order_id,))
     note=request.form.get("resolution_note","").strip()
-    actor=request.form.get("closed_by","management").strip() or "management"
-    # A critical/warning order must have its verification resolved before closure.
+    actor=request.form.get("closed_by","").strip()
+    if not actor:
+        db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
+                (order_id,"CLOSE_BLOCKED","system","Închiderea necesită utilizatorul care efectuează operația.",now()))
+        return redirect(url_for("order", order_id=order_id))
+
+    # A warning/critical order must have its verification resolved before closure.
     if alert and not alert["resolved_at"]:
         db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
                 (order_id,"CLOSE_BLOCKED",actor,"Închiderea necesită rezolvarea verificării.",now()))
         return redirect(url_for("order", order_id=order_id))
-    db_exec("""UPDATE orders SET status='CLOSED', closed_at=?, closed_by=?, resolution_note=? WHERE id=?""",
-            (now(),actor,note,order_id))
-    db_exec("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
-            (order_id,"ORDER_CLOSED",actor,note or "Comanda închisă de Management",now()))
+
+    lines=cosys.get_order_lines(order_id)
+    verification=None
+    if alert:
+        verification=db_one("SELECT * FROM verifications WHERE alert_id=? ORDER BY id DESC LIMIT 1",(alert["id"],))
+
+    closed_at=now()
+    snapshot={
+        "schema_version":"11.3",
+        "order":dict(o),
+        "lines":[dict(x) for x in lines],
+        "alert":dict(alert) if alert else None,
+        "verification":dict(verification) if verification else None,
+        "closed_at":closed_at,
+        "closed_by":actor,
+        "resolution_note":note,
+    }
+
+    def _close(c):
+        existing=c.execute("SELECT id FROM order_history WHERE order_id=?",(order_id,)).fetchone()
+        if existing:
+            return False
+        c.execute("""INSERT INTO order_history(order_id,external_id,closed_at,closed_by,resolution_note,snapshot_json,created_at)\n                     VALUES(?,?,?,?,?,?,?)""",
+                  (order_id,o["external_id"],closed_at,actor,note,json.dumps(snapshot,ensure_ascii=False,sort_keys=True),closed_at))
+        updated=c.execute("""UPDATE orders SET status='CLOSED', closed_at=?, closed_by=?, resolution_note=? WHERE id=? AND status!='CLOSED'""",
+                          (closed_at,actor,note,order_id))
+        if updated.rowcount != 1:
+            raise RuntimeError("Order was already closed")
+        c.execute("INSERT INTO audit(order_id,event,actor,details,created_at) VALUES(?,?,?,?,?)",
+                  (order_id,"ORDER_CLOSED",actor,note or "Comanda închisă",closed_at))
+        return True
+
+    try:
+        _close_result=db_txn(_close)
+    except Exception:
+        return redirect(url_for("order", order_id=order_id))
     return redirect(url_for("order", order_id=order_id))
 
 @app.route("/history")
 def history():
-    orders=db_all("SELECT * FROM orders WHERE status='CLOSED' ORDER BY closed_at DESC, id DESC")
+    rows=db_all("SELECT * FROM order_history ORDER BY closed_at DESC, id DESC")
+    orders=[]
+    for r in rows:
+        try:
+            snap=json.loads(r["snapshot_json"])
+            o=snap.get("order",{})
+            o.update({"id":r["order_id"],"external_id":r["external_id"],"closed_at":r["closed_at"],"closed_by":r["closed_by"],"resolution_note":r["resolution_note"]})
+            orders.append(o)
+        except (TypeError,json.JSONDecodeError):
+            continue
     return render_template("history.html", orders=orders)
 
 @app.route("/settings", methods=["GET","POST"])
