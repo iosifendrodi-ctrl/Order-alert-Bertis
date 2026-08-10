@@ -1,7 +1,7 @@
 # Deployment & COSYS Integration Guide
 
 ## Prototype
-The included application is intentionally independent of COSYS. It uses a replaceable `CosysConnector`.
+The included application is intentionally vendor-neutral. It uses a replaceable `IntegrationConnector` boundary.
 
 ## Production integration
 Replace the prototype connector with the real COSYS integration after confirming:

@@ -1,12 +1,12 @@
-<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#9b1c24"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Order Alert"><link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png"><title>Bertis • Order Alert</title><style>*{box-sizing:border-box}
+<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#9b1c24"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Order Alert"><link rel="manifest" href="/manifest.json"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="icon" href="/icon-192.png"><title>Order Alert</title><style>*{box-sizing:border-box}
 :root{
-  --bertis-red:#9b1c24;
-  --bertis-red-dark:#74131a;
-  --bertis-red-soft:#f8e8e8;
-  --bertis-ink:#171717;
-  --bertis-paper:#faf8f5;
-  --bertis-border:#e5dfd8;
-  --bertis-muted:#6b6865;
+  --order-alert-red:#9b1c24;
+  --order-alert-red-dark:#74131a;
+  --order-alert-red-soft:#f8e8e8;
+  --order-alert-ink:#171717;
+  --order-alert-paper:#faf8f5;
+  --order-alert-border:#e5dfd8;
+  --order-alert-muted:#6b6865;
   --green:#287a43;
   --green-soft:#e8f5ec;
   --amber:#9a6500;
@@ -14,42 +14,42 @@
   --blue:#315f8c;
   --blue-soft:#eaf1f7;
 }
-body{margin:0;background:var(--bertis-paper);color:var(--bertis-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-.top{background:linear-gradient(135deg,var(--bertis-ink),#292929);color:#fff;padding:17px 18px 18px;position:sticky;top:0;z-index:10;border-bottom:4px solid var(--bertis-red)}
+body{margin:0;background:var(--order-alert-paper);color:var(--order-alert-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.top{background:linear-gradient(135deg,var(--order-alert-ink),#292929);color:#fff;padding:17px 18px 18px;position:sticky;top:0;z-index:10;border-bottom:4px solid var(--order-alert-red)}
 .brandrow{display:flex;align-items:center;gap:10px}
 .brandmark{font-weight:950;letter-spacing:1.5px;font-size:22px}
-.branddot{width:8px;height:8px;border-radius:50%;background:var(--bertis-red)}
+.branddot{width:8px;height:8px;border-radius:50%;background:var(--order-alert-red)}
 .top h1{margin:0;font-size:19px;letter-spacing:.3px}
 .top p{margin:5px 0 0;opacity:.72;font-size:12px}
 .wrap{max-width:760px;margin:auto;padding:14px}
 .tabs{display:flex;gap:7px;margin-bottom:12px;position:sticky;top:82px;z-index:8}
-.tabs button{flex:1;border:1px solid var(--bertis-border);border-radius:12px;padding:11px 7px;background:#fff;font-weight:850;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;color:var(--bertis-ink);box-shadow:0 1px 3px #00000008}
-.tabs button.active{background:var(--bertis-red);border-color:var(--bertis-red);color:#fff}
-.panel,.metric{background:#fff;border:1px solid var(--bertis-border);border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 3px 14px #3a241008}
+.tabs button{flex:1;border:1px solid var(--order-alert-border);border-radius:12px;padding:11px 7px;background:#fff;font-weight:850;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;color:var(--order-alert-ink);box-shadow:0 1px 3px #00000008}
+.tabs button.active{background:var(--order-alert-red);border-color:var(--order-alert-red);color:#fff}
+.panel,.metric{background:#fff;border:1px solid var(--order-alert-border);border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 3px 14px #3a241008}
 .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .metric{margin:0}
 .metric .n{font-size:24px;font-weight:950}
-.muted{color:var(--bertis-muted);font-size:13px}
+.muted{color:var(--order-alert-muted);font-size:13px}
 .badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:850}
-.red{background:var(--bertis-red-soft);color:var(--bertis-red-dark)}
+.red{background:var(--order-alert-red-soft);color:var(--order-alert-red-dark)}
 .amber{background:var(--amber-soft);color:var(--amber)}
 .blue{background:var(--blue-soft);color:var(--blue)}
 .green{background:var(--green-soft);color:var(--green)}
 .line{padding:11px 0;border-bottom:1px solid #eee8e2}
-.btn{width:100%;border:0;border-radius:10px;padding:12px;margin-top:8px;font-weight:850;font-size:15px;background:var(--bertis-red);color:white}
-.btn:hover{background:var(--bertis-red-dark)}
-.btn.light{background:#f1eeea;color:var(--bertis-ink)}
-.btn.redbtn{background:var(--bertis-red-dark)}
+.btn{width:100%;border:0;border-radius:10px;padding:12px;margin-top:8px;font-weight:850;font-size:15px;background:var(--order-alert-red);color:white}
+.btn:hover{background:var(--order-alert-red-dark)}
+.btn.light{background:#f1eeea;color:var(--order-alert-ink)}
+.btn.redbtn{background:var(--order-alert-red-dark)}
 .select{width:100%;padding:12px;border:1px solid #d6d0ca;border-radius:10px;background:#fff;font-size:15px}
 .hidden{display:none}
 .timeline{border-left:3px solid #d8cfc7;margin:10px 0 0 6px;padding-left:14px}
 .event{margin:0 0 14px}
 .event b{display:block}
-.notice{background:#f4eee8;border-left:4px solid var(--bertis-red);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}
+.notice{background:#f4eee8;border-left:4px solid var(--order-alert-red);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}
 .qty{display:flex;gap:8px;align-items:center}
 .qty input{width:90px;padding:10px;border:1px solid #d6d0ca;border-radius:9px;font-size:16px}
-.toast{position:fixed;left:14px;right:14px;bottom:18px;background:var(--bertis-ink);color:#fff;padding:13px;border-radius:12px;display:none;z-index:20;border-left:4px solid var(--bertis-red)}
-.dangerbox{background:#fbefee;border-left:5px solid var(--bertis-red);border-radius:12px;padding:13px}
+.toast{position:fixed;left:14px;right:14px;bottom:18px;background:var(--order-alert-ink);color:#fff;padding:13px;border-radius:12px;display:none;z-index:20;border-left:4px solid var(--order-alert-red)}
+.dangerbox{background:#fbefee;border-left:5px solid var(--order-alert-red);border-radius:12px;padding:13px}
 .okbox{background:var(--green-soft);border-left:5px solid var(--green);border-radius:12px;padding:13px}
 .brandnote{font-size:11px;color:#77716b;text-align:center;padding:8px 0 18px}
 .sectiontitle{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -64,7 +64,7 @@ body{margin:0;background:var(--bertis-paper);color:var(--bertis-ink);font-family
 .integrity-table tfoot td{font-weight:900;border-top:2px solid #d9d1ca}
 </style>
 
-</head><body><header class="top"><div class="brandrow"><div class="brandmark">BERTIS</div><div class="branddot"></div><h1>ORDER ALERT</h1></div><p>Demo operațional • controlul diferențelor de picking</p></header><main class="wrap"><div class="tabs" role="tablist"><button type="button" id="agentTab" class="active" data-role="agent">👤 Agent vânzări</button><button type="button" id="managerTab" data-role="manager">💼 Management</button><button type="button" id="warehouseTab" data-role="warehouse">🏭 Depozit</button><button type="button" id="historyTab" data-role="history">🗂️ Istoric</button></div><section id="agent"><div class="panel" id="agentAlertSummary" style="padding:10px 14px;margin-bottom:10px"><b>🔔 Alerte agent</b> <span id="agentAlertBadge" class="badge red">1</span><span id="agentAlertSummaryText" class="muted" style="margin-left:8px">Diferențe detectate în comandă</span><button class="btn light" id="enableNotificationsBtn" type="button" style="margin-top:8px">ACTIVEAZĂ NOTIFICĂRI</button></div><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Client HoReCa • Agent A</div><div class="line"><b>Salam de iarnă Bertis</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnații Bunicii Bertis</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" id="ackBtn" type="button">AM VĂZUT</button><button class="btn redbtn" id="verifyBtn" type="button">SOLICITĂ VERIFICARE</button>
+</head><body><header class="top"><div class="brandrow"><div class="brandmark">ORDER ALERT</div><div class="branddot"></div><h1>ORDER ALERT</h1></div><p>Demo operațional • controlul diferențelor de picking</p></header><main class="wrap"><div class="tabs" role="tablist"><button type="button" id="agentTab" class="active" data-role="agent">👤 Agent vânzări</button><button type="button" id="managerTab" data-role="manager">💼 Management</button><button type="button" id="warehouseTab" data-role="warehouse">🏭 Depozit</button><button type="button" id="historyTab" data-role="history">🗂️ Istoric</button></div><section id="agent"><div class="panel" id="agentAlertSummary" style="padding:10px 14px;margin-bottom:10px"><b>🔔 Alerte agent</b> <span id="agentAlertBadge" class="badge red">1</span><span id="agentAlertSummaryText" class="muted" style="margin-left:8px">Diferențe detectate în comandă</span><button class="btn light" id="enableNotificationsBtn" type="button" style="margin-top:8px">ACTIVEAZĂ NOTIFICĂRI</button></div><div class="notice"><b>Scenariu demo:</b> modifică stadiul sau cantitatea din depozit și urmărește cum apare alerta agentului.</div><div class="metrics"><div class="metric"><div class="muted">🔴 Alerte</div><div class="n" id="alertCount">1</div></div><div class="metric"><div class="muted">🟠 Verificare</div><div class="n" id="verifyCount">0</div></div><div class="metric"><div class="muted">🟢 Complete</div><div class="n">18</div></div></div><div class="panel"><span id="statusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><h2 style="margin:9px 0 4px">Comanda #12548</h2><div class="muted">Client HoReCa • Agent A</div><div class="line"><b>Salam de iarnă ORDER ALERT</b><br><span>Comandat: <b>10 kg</b> · Pregătit: <b id="salamiPicked">6 kg</b> · Lipsă: <b id="salamiMissing">4 kg</b></span></div><div class="line"><b>Cârnații Bunicii ORDER ALERT</b><br><span>Comandat: <b>6 kg</b> · Pregătit: <b id="sausagePicked">0 kg</b> · Lipsă: <b id="sausageMissing">6 kg</b></span></div><div id="alertBox" class="dangerbox" style="margin-top:12px"><b>🔴 ALERTĂ</b><br>Comanda nu este completă. Diferența depășește pragul configurat.</div><button class="btn light" id="ackBtn" type="button">AM VĂZUT</button><button class="btn redbtn" id="verifyBtn" type="button">SOLICITĂ VERIFICARE</button>
 <div id="resolutionPanel" class="panel hidden" style="margin-top:12px;border-color:#e0d8cf">
   <h3 style="margin-top:0">Rezolvare depozit</h3>
   <div class="muted" style="margin-bottom:8px">Verificarea a fost solicitată. În demo, depozitul confirmă rezolvarea înainte de închiderea comenzii.</div>
@@ -91,8 +91,8 @@ body{margin:0;background:var(--bertis-paper);color:var(--bertis-ink);font-family
     <div class="metric"><div class="muted">Pregătit</div><div class="n" id="detailPicked">15 kg</div></div>
     <div class="metric"><div class="muted">Lipsă</div><div class="n" id="detailMissing">1 kg</div></div>
   </div>
-  <div class="line"><b>Salam de iarnă Bertis</b><br>Comandat: 10 kg · Pregătit: <b id="detailSalamiPicked">9 kg</b> · Lipsă: <b id="detailSalamiMissing">1 kg</b> · <span id="detailSalamiSeverity" class="badge green">OK</span></div>
-  <div class="line"><b>Cârnații Bunicii Bertis</b><br>Comandat: 6 kg · Pregătit: <b id="detailSausagePicked">6 kg</b> · Lipsă: <b id="detailSausageMissing">0 kg</b> · <span id="detailSausageSeverity" class="badge green">OK</span></div>
+  <div class="line"><b>Salam de iarnă ORDER ALERT</b><br>Comandat: 10 kg · Pregătit: <b id="detailSalamiPicked">9 kg</b> · Lipsă: <b id="detailSalamiMissing">1 kg</b> · <span id="detailSalamiSeverity" class="badge green">OK</span></div>
+  <div class="line"><b>Cârnații Bunicii ORDER ALERT</b><br>Comandat: 6 kg · Pregătit: <b id="detailSausagePicked">6 kg</b> · Lipsă: <b id="detailSausageMissing">0 kg</b> · <span id="detailSausageSeverity" class="badge green">OK</span></div>
   <div class="notice" style="margin-top:12px"><b>Praguri active</b><br>Avertizare: <span id="detailWarning">15%</span> · Critic: <span id="detailCritical">40%</span><br><span id="detailThresholdMessage">Diferențele existente sunt sub pragul de alertare configurat.</span></div>
   <h3>Istoric comandă</h3>
   <div class="timeline" id="detailTimeline"></div>
@@ -109,7 +109,7 @@ Pragurile sunt configurabile și se aplică fiecărui produs în parte. Pentru d
 <button class="btn" id="saveThresholdsBtn" type="button">SALVEAZĂ PRAGURILE</button>
 <div id="thresholdMsg" class="muted" style="margin-top:8px"></div>
 </div>
-<div class="panel"><h2>Dashboard</h2><div class="line">Comenzi complete <b style="float:right">85,7%</b></div><div class="line">Produse cu diferențe <b style="float:right" id="diffProducts">2</b></div><div class="line">Verificări solicitate <b style="float:right" id="managerVerify">0</b></div></div><div class="panel"><h2>Istoric #12548</h2><div class="timeline" id="timeline"></div></div></section><section id="warehouse" class="hidden"><div class="notice"><b>Operator depozit • simulare picking</b><br>Modifică ce s-a găsit la picking. La finalizare, aplicația calculează automat diferența.</div><div class="panel"><h2>Comanda #12548</h2><div class="line"><b>Salam de iarnă Bertis</b><div class="qty"><span>Comandat 10 kg</span><input id="salamiInput" type="number" min="0" max="10" value="6"></div></div><div class="line"><b>Cârnații Bunicii Bertis</b><div class="qty"><span>Comandat 6 kg</span><input id="sausageInput" type="number" min="0" max="6" value="0"></div></div><button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button><button class="btn light" id="completeAllBtn" type="button">SIMULEAZĂ COMANDĂ COMPLETĂ</button><div id="warehouseMsg" class="muted" style="margin-top:9px"></div></div></section><section id="history" class="hidden"><div class="panel"><div class="sectiontitle"><h2>🗂️ Istoric comenzi</h2><span class="badge blue" id="historyCount">0</span></div><div class="muted" style="margin:5px 0 12px">Snapshot-uri create la închiderea comenzilor. Istoricul este read-only.</div><div id="historyList"></div></div></section><div class="brandnote">Bertis Distribution • Order Alert Demo<br>Controlul diferențelor. Reacție rapidă. Trasabilitate.</div>
+<div class="panel"><h2>Dashboard</h2><div class="line">Comenzi complete <b style="float:right">85,7%</b></div><div class="line">Produse cu diferențe <b style="float:right" id="diffProducts">2</b></div><div class="line">Verificări solicitate <b style="float:right" id="managerVerify">0</b></div></div><div class="panel"><h2>Istoric #12548</h2><div class="timeline" id="timeline"></div></div></section><section id="warehouse" class="hidden"><div class="notice"><b>Operator depozit • simulare picking</b><br>Modifică ce s-a găsit la picking. La finalizare, aplicația calculează automat diferența.</div><div class="panel"><h2>Comanda #12548</h2><div class="line"><b>Salam de iarnă ORDER ALERT</b><div class="qty"><span>Comandat 10 kg</span><input id="salamiInput" type="number" min="0" max="10" value="6"></div></div><div class="line"><b>Cârnații Bunicii ORDER ALERT</b><div class="qty"><span>Comandat 6 kg</span><input id="sausageInput" type="number" min="0" max="6" value="0"></div></div><button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button><button class="btn light" id="completeAllBtn" type="button">SIMULEAZĂ COMANDĂ COMPLETĂ</button><div id="warehouseMsg" class="muted" style="margin-top:9px"></div></div></section><section id="history" class="hidden"><div class="panel"><div class="sectiontitle"><h2>🗂️ Istoric comenzi</h2><span class="badge blue" id="historyCount">0</span></div><div class="muted" style="margin:5px 0 12px">Snapshot-uri create la închiderea comenzilor. Istoricul este read-only.</div><div id="historyList"></div></div></section><div class="brandnote">Order Alert • Universal Integration Demo<br>Controlul diferențelor. Reacție rapidă. Trasabilitate.</div>
 <div id="v7IntegrityPanel" class="panel">
   <div class="sectiontitle">
     <h3>Integritatea datelor</h3>
@@ -329,12 +329,12 @@ function render() {
   $('alertBox').innerHTML = critical
     ? `<b>🔴 ALERTĂ CRITICĂ — COMANDA #12548</b><br>
        Depozitul a finalizat picking-ul cu o abatere critică.<br>
-       Salam de iarnă Bertis: <b>${sm} kg lipsă</b> · Cârnații Bunicii Bertis: <b>${ss} kg lipsă</b><br>
+       Salam de iarnă ORDER ALERT: <b>${sm} kg lipsă</b> · Cârnații Bunicii ORDER ALERT: <b>${ss} kg lipsă</b><br>
        <span class="muted">Praguri active: avertizare ${state.thresholds.warning}% · critic ${state.thresholds.critical}%</span>`
     : activeWarning
     ? `<b>🟠 AVERTIZARE — COMANDA #12548</b><br>
        Diferența a depășit pragul de avertizare.<br>
-       Salam de iarnă Bertis: <b>${sm} kg lipsă</b> · Cârnații Bunicii Bertis: <b>${ss} kg lipsă</b><br>
+       Salam de iarnă ORDER ALERT: <b>${sm} kg lipsă</b> · Cârnații Bunicii ORDER ALERT: <b>${ss} kg lipsă</b><br>
        <span class="muted">Praguri active: avertizare ${state.thresholds.warning}% · critic ${state.thresholds.critical}%</span>`
     : '<b>🟢 COMANDĂ ÎN LIMITE</b><br>Diferențele existente sunt sub pragul de alertare configurat.';
 
@@ -363,8 +363,8 @@ function render() {
         <span class="badge ${critical ? 'red' : 'red'}">${critical ? 'ALERTĂ CRITICĂ' : 'INCOMPLETĂ'}</span>
         <h3 style="margin:8px 0 4px">Comanda #12548</h3>
         <div class="muted">Client HoReCa • Agent A • Picking finalizat</div>
-        <div class="line"><b>Salam de iarnă Bertis</b><br>Comandat: 10 kg · Pregătit: ${state.salami} kg · <b>Lipsă: ${sm} kg</b> · <span class="badge">${severityLabel(salamiSeverity)}</span></div>
-        <div class="line"><b>Cârnații Bunicii Bertis</b><br>Comandat: 6 kg · Pregătit: ${state.sausage} kg · <b>Lipsă: ${ss} kg</b> · <span class="badge">${severityLabel(sausageSeverity)}</span></div>
+        <div class="line"><b>Salam de iarnă ORDER ALERT</b><br>Comandat: 10 kg · Pregătit: ${state.salami} kg · <b>Lipsă: ${sm} kg</b> · <span class="badge">${severityLabel(salamiSeverity)}</span></div>
+        <div class="line"><b>Cârnații Bunicii ORDER ALERT</b><br>Comandat: 6 kg · Pregătit: ${state.sausage} kg · <b>Lipsă: ${ss} kg</b> · <span class="badge">${severityLabel(sausageSeverity)}</span></div>
         <button class="btn redbtn" type="button" id="managerDetailsBtn">VEZI DETALII</button>
       </div>` :
       '<div class="okbox"><b>🟢 Nu există comenzi incomplete.</b></div>';
@@ -426,7 +426,7 @@ function closeOrder() {
     id: '12548', customer: 'Client HoReCa', agent: 'Agent A', status: 'CLOSED',
     closedAt: new Date().toISOString(), closedBy: state.closedBy, closeNote: state.closeNote,
     resolution: {reason: state.resolutionReason, note: state.resolutionNote},
-    lines: [{product:'Salam de iarnă Bertis', ordered:10, picked:state.salami, missing:Math.max(0,10-state.salami)}, {product:'Cârnații Bunicii Bertis', ordered:6, picked:state.sausage, missing:Math.max(0,6-state.sausage)}],
+    lines: [{product:'Salam de iarnă ORDER ALERT', ordered:10, picked:state.salami, missing:Math.max(0,10-state.salami)}, {product:'Cârnații Bunicii ORDER ALERT', ordered:6, picked:state.sausage, missing:Math.max(0,6-state.sausage)}],
     events: state.events.map(e => ({...e}))
   };
   state.history.unshift(snapshot);

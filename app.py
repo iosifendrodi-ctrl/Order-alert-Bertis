@@ -8,18 +8,20 @@ DB = os.path.join(os.path.dirname(__file__), "order_alert.db")
 # -----------------------------
 # COSYS integration boundary
 # -----------------------------
-class CosysConnector:
-    """Prototype adapter. Replace these methods with the real COSYS API/WebService."""
+class IntegrationConnector:
+    """Vendor-neutral adapter. Replace these methods with the target system API, WebService, webhook, queue, database adapter or SDK."""
     def get_orders(self):
         return db_all("SELECT * FROM orders ORDER BY created_at DESC")
     def get_order_lines(self, order_id):
         return db_all("SELECT * FROM order_lines WHERE order_id=? ORDER BY id", (order_id,))
     def get_picking_lines(self, order_id):
         return db_all("SELECT * FROM order_lines WHERE order_id=? ORDER BY id", (order_id,))
-    def mark_alert_checked(self, order_id):
+    def acknowledge_alert(self, order_id, actor="system"):
         pass
 
-cosys = CosysConnector()
+integration = IntegrationConnector()
+# Backward-compatible internal alias; the product itself is vendor-neutral.
+cosys = integration
 
 def conn():
     c=sqlite3.connect(DB)

@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: Order Alert Integration API
+  version: 1.0.0
+  description: Vendor-neutral integration contract for order exceptions, verification and closure.
+servers:
+  - url: https://your-order-alert-host.example
+paths:
+  /api/v1/orders:
+    get:
+      summary: List orders
+      responses:
+        '200':
+          description: Orders
+  /api/v1/orders/{orderId}:
+    get:
+      summary: Get canonical order state
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Order state}
+        '404': {description: Not found}
+  /api/v1/events:
+    post:
+      summary: Receive an integration event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event_id, type, occurred_at, order]
+              properties:
+                event_id: {type: string}
+                type:
+                  type: string
+                  enum: [order.created, order.picking.updated, order.picking.completed, order.cancelled]
+                occurred_at: {type: string, format: date-time}
+                order: {type: object}
+      responses:
+        '202': {description: Accepted}
+        '409': {description: Duplicate event}
+  /api/v1/orders/{orderId}/close:
+    post:
+      summary: Close an order after verification is resolved
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actor]
+              properties:
+                actor: {type: string}
+                resolution_note: {type: string}
+                idempotency_key: {type: string}
+      responses:
+        '200': {description: Order closed}
+        '409': {description: Closure blocked by unresolved verification or conflicting state}
+  /api/v1/history:
+    get:
+      summary: Read immutable order history
+      responses:
+        '200': {description: Historical snapshots}

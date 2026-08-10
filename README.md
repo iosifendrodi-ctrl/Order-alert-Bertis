@@ -1,4 +1,4 @@
-# Order Alert v11.3 — Prototype / Demo
+# Order Alert v1.4 — Prototype / Demo
 
 A professional prototype for monitoring order vs. picked quantities, applying configurable alert rules, notifying sales agents, handling verification requests, and providing management reporting.
 
@@ -25,4 +25,4 @@ A professional prototype for monitoring order vs. picked quantities, applying co
 3. `python app.py`
 4. Open http://127.0.0.1:5000
 
-The prototype deliberately keeps the COSYS integration behind `CosysConnector` in `app.py`. Replace that adapter with the real COSYS API/WebService integration after the customer's COSYS environment is audited.
+The prototype keeps external-system integration behind a vendor-neutral `IntegrationConnector`. Implement the adapter for the target ERP/WMS/OMS/TMS/POS/custom system without changing the core workflow.

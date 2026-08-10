@@ -1,6 +1,6 @@
 {
-  "name": "Bertis Order Alert",
-  "short_name": "Bertis Alert",
+  "name": "Order Alert",
+  "short_name": "Order Alert",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf8f5",
