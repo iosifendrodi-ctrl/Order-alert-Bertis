@@ -1,0 +1,16 @@
+ORDER ALERT v1.4 — WAREHOUSE VERIFICATION FIX
+
+Upload these files to branch:
+V11.3-repair-main
+
+1. Replace the existing index.html with this index.html.
+2. Commit:
+   ORDER ALERT v1.4 - warehouse verification acknowledgement fix
+3. Do NOT deploy manually to Production.
+4. Vercel should create a new Preview deployment for the branch.
+
+Expected behavior:
+- Warehouse sees "VERIFICARE SOLICITATĂ".
+- Status initially: "AȘTEAPTĂ REVERIFICAREA".
+- Warehouse can press "CONFIRMĂ REVERIFICAREA".
+- Status changes to "REVERIFICARE CONFIRMATĂ".
