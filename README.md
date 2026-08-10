@@ -3,7 +3,7 @@
 A professional prototype for monitoring order vs. picked quantities, applying configurable alert rules, notifying sales agents, handling verification requests, and providing management reporting.
 
 ## Current scope
-- Simulated COSYS connector (replaceable by a real API/WebService adapter later)
+- Vendor-neutral integration adapter (replaceable by a real API/WebService adapter)
 - Order lifecycle: Confirmed → Sent to Warehouse → Picking → Picking Completed
 - Automatic comparison of ordered vs. picked quantities
 - Configurable global and product-level thresholds

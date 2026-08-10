@@ -6,7 +6,7 @@ app = Flask(__name__)
 DB = os.path.join(os.path.dirname(__file__), "order_alert.db")
 
 # -----------------------------
-# COSYS integration boundary
+# Vendor-neutral integration boundary
 # -----------------------------
 class IntegrationConnector:
     """Vendor-neutral adapter. Replace these methods with the target system API, WebService, webhook, queue, database adapter or SDK."""
@@ -20,9 +20,7 @@ class IntegrationConnector:
         pass
 
 integration = IntegrationConnector()
-# Backward-compatible internal alias; the product itself is vendor-neutral.
-cosys = integration
-
+# 
 def conn():
     c=sqlite3.connect(DB)
     c.row_factory=sqlite3.Row
