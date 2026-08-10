@@ -1,4 +1,4 @@
-const CACHE='order-alert-v11-5-shared-state';
+const CACHE='order-alert-v11-6-shared-state';
 const ASSETS=['/','/index.html','/manifest.json','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];
 const SYNC_KEY='oa_shared_sync_v1';
 
@@ -7,18 +7,24 @@ self.addEventListener('install',event=>{
 });
 
 self.addEventListener('activate',event=>{
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+  event.waitUntil(
+    caches.keys()
+      .then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+      .then(()=>self.clients.claim())
+  );
 });
 
 async function transformIndex(response){
   const html=await response.text();
-  if(html.includes('OA_SHARED_STATE_PATCH_V2')) return new Response(html,{status:response.status,headers:{'Content-Type':'text/html; charset=utf-8'}});
+  if(html.includes('OA_SHARED_STATE_PATCH_V3')){
+    return new Response(html,{status:response.status,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+  }
 
   let out=html;
 
   out=out.replace(
     "const state = {\n  salami: 6,\n  sausage: 0,\n  stage: 'difference',",
-    "const OA_SHARED_STATE_PATCH_V2=true;\nconst OA_SHARED_KEY='oa_shared_sync_v1';\nfunction OA_sharedLoad(){try{return JSON.parse(localStorage.getItem(OA_SHARED_KEY)||'{}')}catch(_){return {}}}\nconst OA_shared=OA_sharedLoad();\nconst state = {\n  salami: Number.isFinite(Number(OA_shared.salami)) ? Number(OA_shared.salami) : 6,\n  sausage: Number.isFinite(Number(OA_shared.sausage)) ? Number(OA_shared.sausage) : 0,\n  stage: OA_shared.stage || 'difference',"
+    "const OA_SHARED_STATE_PATCH_V3=true;\nconst OA_SHARED_KEY='oa_shared_sync_v1';\nfunction OA_sharedLoad(){try{return JSON.parse(localStorage.getItem(OA_SHARED_KEY)||'{}')}catch(_){return {}}}\nconst OA_shared=OA_sharedLoad();\nconst state = {\n  salami: Number.isFinite(Number(OA_shared.salami)) ? Number(OA_shared.salami) : 6,\n  sausage: Number.isFinite(Number(OA_shared.sausage)) ? Number(OA_shared.sausage) : 0,\n  stage: OA_shared.stage || 'difference',"
   );
 
   out=out.replace(
@@ -28,7 +34,7 @@ async function transformIndex(response){
 
   const patch=`
 <script>
-/* OA_SHARED_STATE_PATCH_V2 — vendor-neutral shared demo state + verification confirmation */
+/* OA_SHARED_STATE_PATCH_V3 — vendor-neutral shared state, dynamic SPA role detection, reverification confirmation */
 (function(){
   const KEY='oa_shared_sync_v1';
 
@@ -36,12 +42,23 @@ async function transformIndex(response){
     try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(_){return {}}
   }
 
-  function writeWarehouseState(){
-    try{
-      const role=new URLSearchParams(location.search).get('role') || 'agent';
-      if(role!=='warehouse') return;
+  function sectionVisible(id){
+    const e=document.getElementById(id);
+    return !!e && !e.classList.contains('hidden');
+  }
 
+  function currentRole(){
+    if(sectionVisible('warehouse')) return 'warehouse';
+    if(sectionVisible('manager')) return 'manager';
+    if(sectionVisible('history')) return 'history';
+    return 'agent';
+  }
+
+  function writeWarehouseState(){
+    if(currentRole()!=='warehouse') return;
+    try{
       const statusText=document.getElementById('warehouseVerificationStatus')?.textContent || '';
+      const buttonText=document.getElementById('warehouseAcknowledgeBtn')?.textContent || '';
       const s={
         salami:Number(document.getElementById('salamiInput')?.value ?? 6),
         sausage:Number(document.getElementById('sausageInput')?.value ?? 0),
@@ -52,13 +69,13 @@ async function transformIndex(response){
         closed:!!document.getElementById('closedPanel') &&
           !document.getElementById('closedPanel').classList.contains('hidden'),
         ack:document.getElementById('ackBtn')?.textContent?.includes('ALERTĂ VĂZUTĂ') || false,
-        warehouseAcknowledged:statusText.includes('REVERIFICARE CONFIRMATĂ') ||
-          document.getElementById('warehouseAcknowledgeBtn')?.textContent?.includes('REVERIFICARE CONFIRMATĂ') || false,
+        warehouseAcknowledged:
+          statusText.includes('REVERIFICARE CONFIRMATĂ') ||
+          buttonText.includes('REVERIFICARE CONFIRMATĂ') ||
+          buttonText.includes('✓ REVERIFICARE CONFIRMATĂ'),
         updatedAt:Date.now()
       };
-
-      const old=read();
-      localStorage.setItem(KEY,JSON.stringify({...old,...s}));
+      localStorage.setItem(KEY,JSON.stringify({...read(),...s}));
     }catch(_){}
   }
 
@@ -73,12 +90,12 @@ async function transformIndex(response){
   }
 
   function syncAgentVerificationStatus(){
+    if(currentRole()!=='agent') return;
     try{
-      const role=new URLSearchParams(location.search).get('role') || 'agent';
-      if(role!=='agent') return;
       const s=read();
       const msg=document.getElementById('agentMsg');
       if(!msg) return;
+
       if(s.warehouseAcknowledged===true){
         msg.textContent='Depozitul a confirmat reverificarea.';
         msg.style.color='#287a43';
@@ -92,58 +109,61 @@ async function transformIndex(response){
   }
 
   function persistAgentState(){
+    if(currentRole()!=='agent') return;
     try{
       const old=read();
       const stage=document.getElementById('stage')?.value || old.stage || 'difference';
-      const verified=
+      const verified =
         document.getElementById('verifyBtn')?.textContent?.includes('VERIFICARE SOLICITATĂ') ||
-        stage==='verification' || old.verified===true;
-      const resolved=stage==='resolved';
-      const closed=!!document.getElementById('closedPanel') &&
-        !document.getElementById('closedPanel').classList.contains('hidden');
+        stage==='verification' ||
+        old.verified===true;
 
       localStorage.setItem(KEY,JSON.stringify({
         ...old,
         stage,
         verified,
-        resolved,
-        closed,
+        resolved:stage==='resolved',
+        closed:!!document.getElementById('closedPanel') &&
+          !document.getElementById('closedPanel').classList.contains('hidden'),
         updatedAt:Date.now()
       }));
-      syncAgentVerificationStatus();
     }catch(_){}
   }
 
   function install(){
-    const role=new URLSearchParams(location.search).get('role') || 'agent';
+    // Important: this is a single-page app. Do NOT bind the sync layer
+    // to URL query parameters. The active tab determines the role.
+    ['finishPickingBtn','completeAllBtn','warehouseAcknowledgeBtn'].forEach(id=>{
+      const e=document.getElementById(id);
+      if(e) e.addEventListener('click',()=>setTimeout(writeWarehouseState,80));
+    });
 
-    if(role==='warehouse'){
-      restoreWarehouseInputs();
+    ['ackBtn','verifyBtn','resolveBtn','closeOrderBtn','stage'].forEach(id=>{
+      const e=document.getElementById(id);
+      if(e) e.addEventListener('click',()=>setTimeout(persistAgentState,80));
+    });
 
-      ['finishPickingBtn','completeAllBtn','warehouseAcknowledgeBtn'].forEach(id=>{
-        const e=document.getElementById(id);
-        if(e) e.addEventListener('click',()=>setTimeout(writeWarehouseState,100));
-      });
+    restoreWarehouseInputs();
+    syncAgentVerificationStatus();
 
-      setInterval(writeWarehouseState,500);
-
-    }else if(role==='agent'){
-      ['ackBtn','verifyBtn','resolveBtn','closeOrderBtn','stage'].forEach(id=>{
-        const e=document.getElementById(id);
-        if(e) e.addEventListener('click',()=>setTimeout(persistAgentState,50));
-      });
-      syncAgentVerificationStatus();
-    }
+    // Covers tab changes and state changes inside the SPA.
+    setInterval(()=>{
+      if(currentRole()==='warehouse'){
+        restoreWarehouseInputs();
+        writeWarehouseState();
+      }else if(currentRole()==='agent'){
+        persistAgentState();
+        syncAgentVerificationStatus();
+      }
+    },300);
   }
 
   window.addEventListener('storage',e=>{
     if(e.key!==KEY || !e.newValue) return;
-
-    const role=new URLSearchParams(location.search).get('role') || 'agent';
-
-    if(role==='agent'){
+    if(currentRole()==='agent'){
+      syncAgentVerificationStatus();
       location.reload();
-    }else if(role==='warehouse'){
+    }else if(currentRole()==='warehouse'){
       restoreWarehouseInputs();
     }
   });
@@ -153,7 +173,7 @@ async function transformIndex(response){
 })();
 </script>`;
 
-  out=out.replace('</body></html>',patch+'\n</body></html>');
+  out=out.replace('</body></html>',patch+'\\n</body></html>');
 
   return new Response(out,{
     status:response.status,

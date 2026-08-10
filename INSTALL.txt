@@ -1,0 +1,32 @@
+ORDER ALERT v1.6 — SPA ROLE / REVERIFICATION SYNC FIX
+
+Root cause fixed:
+The previous v1.5 sync layer assumed roles were encoded in the URL as
+?role=agent / ?role=warehouse. The application is actually a single-page
+application where Agent and Depozit are tabs/sections in the same index.html.
+Therefore v1.5 could miss warehouse confirmation after switching tabs.
+
+v1.6 detects the active section (#agent / #warehouse) dynamically and keeps
+syncing shared state regardless of which tab was opened first.
+
+Install:
+1. Open GitHub branch V11.3-repair-main.
+2. Replace ONLY sw.js with the sw.js from this ZIP.
+3. Commit:
+   ORDER ALERT v1.6 - fix SPA warehouse reverification sync
+4. Wait for the new Vercel Preview.
+5. Open the NEW Preview URL.
+6. Test:
+   Agent -> SOLICITĂ VERIFICARE
+   Depozit -> CONFIRMĂ REVERIFICAREA
+   Agent -> must display:
+   "Depozitul a confirmat reverificarea."
+
+Then test the full flow:
+- Depot confirmation
+- Agent sees confirmation
+- Resolve verification
+- Close order
+- Read-only history snapshot
+
+Do not use an old Preview after deploying v1.6.
