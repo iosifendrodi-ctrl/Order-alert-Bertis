@@ -1,7 +1,7 @@
 const CACHE='order-alert-v11-6-shared-state';
 const ASSETS=['/','/index.html','/manifest.json','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];
 const SYNC_KEY='oa_shared_sync_v1';
-const PATCH='OA_SHARED_STATE_PATCH_V5';
+const PATCH='OA_SHARED_STATE_PATCH_V6';
 
 self.addEventListener('install',event=>{
   event.waitUntil(
@@ -15,7 +15,9 @@ self.addEventListener('activate',event=>{
   event.waitUntil(
     caches.keys()
       .then(keys=>Promise.all(
-        keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
+        keys
+          .filter(k=>k!==CACHE)
+          .map(k=>caches.delete(k))
       ))
       .then(()=>self.clients.claim())
   );
@@ -47,7 +49,9 @@ const OA_SHARED_KEY='${SYNC_KEY}';
 
 function OA_sharedLoad(){
   try{
-    return JSON.parse(localStorage.getItem(OA_SHARED_KEY)||'{}');
+    return JSON.parse(
+      localStorage.getItem(OA_SHARED_KEY)||'{}'
+    );
   }catch(_){
     return {};
   }
@@ -56,15 +60,18 @@ function OA_sharedLoad(){
 const OA_shared=OA_sharedLoad();
 
 const state = {
-  salami:Number.isFinite(Number(OA_shared.salami))
-    ? Number(OA_shared.salami)
-    : 6,
+  salami:
+    Number.isFinite(Number(OA_shared.salami))
+      ? Number(OA_shared.salami)
+      : 6,
 
-  sausage:Number.isFinite(Number(OA_shared.sausage))
-    ? Number(OA_shared.sausage)
-    : 0,
+  sausage:
+    Number.isFinite(Number(OA_shared.sausage))
+      ? Number(OA_shared.sausage)
+      : 0,
 
-  stage:OA_shared.stage || 'difference',`
+  stage:
+    OA_shared.stage || 'difference',`
   );
 
   /*
@@ -76,30 +83,35 @@ const state = {
   resolved:OA_shared.resolved === true,
   closed:OA_shared.closed === true,
   ack:OA_shared.ack === true,
-  warehouseAcknowledged:OA_shared.warehouseAcknowledged === true,`
+  warehouseAcknowledged:
+    OA_shared.warehouseAcknowledged === true,`
   );
 
   const patch=`
 <script>
 /* ${PATCH}
    Order Alert v1.9
-   Agent cannot request verification.
-   Warehouse remains responsible for reverification.
+   Shared Agent / Warehouse reverification state.
 */
 (function(){
 
   const KEY='${SYNC_KEY}';
 
   function read(){
+
     try{
-      return JSON.parse(localStorage.getItem(KEY)||'{}');
+      return JSON.parse(
+        localStorage.getItem(KEY)||'{}'
+      );
     }catch(_){
       return {};
     }
   }
 
   function write(value){
+
     try{
+
       localStorage.setItem(
         KEY,
         JSON.stringify({
@@ -108,42 +120,56 @@ const state = {
           updatedAt:Date.now()
         })
       );
+
     }catch(_){}
   }
 
   function visible(id){
+
     const el=document.getElementById(id);
-    return !!el && !el.classList.contains('hidden');
+
+    return !!el &&
+      !el.classList.contains('hidden');
   }
 
   function role(){
 
-    if(visible('warehouse')) return 'warehouse';
-    if(visible('manager')) return 'manager';
-    if(visible('history')) return 'history';
+    if(visible('warehouse')){
+      return 'warehouse';
+    }
+
+    if(visible('manager')){
+      return 'manager';
+    }
+
+    if(visible('history')){
+      return 'history';
+    }
 
     return 'agent';
   }
 
   /*
    * ============================================================
-   * AGENT
+   * AGENT — VERIFICATION REMOVED
    * ============================================================
-   *
-   * Agentul NU mai poate solicita verificarea.
    */
 
   function removeAgentVerification(){
 
-    if(role()!=='agent') return;
+    if(role()!=='agent'){
+      return;
+    }
 
-    const verifyBtn=document.getElementById('verifyBtn');
+    const verifyBtn=
+      document.getElementById('verifyBtn');
 
     if(verifyBtn){
       verifyBtn.remove();
     }
 
-    const stage=document.getElementById('stage');
+    const stage=
+      document.getElementById('stage');
 
     if(stage){
 
@@ -165,29 +191,102 @@ const state = {
   }
 
   /*
-   * Agentul este notificat automat imediat ce există o diferență.
-   * Nu mai este nevoie de apăsarea unui buton.
+   * ============================================================
+   * IMPORTANT:
+   *
+   * Agentul preia STAREA REALĂ din localStorage înainte
+   * de actualizarea mesajului.
+   *
+   * Aceasta este corecția care lipsea în V5.
+   * ============================================================
    */
+
+  function syncAgentFromShared(){
+
+    if(
+      role()!=='agent' ||
+      typeof state==='undefined'
+    ){
+      return;
+    }
+
+    const shared=read();
+
+    if(shared.salami !== undefined){
+      const value=Number(shared.salami);
+
+      if(Number.isFinite(value)){
+        state.salami=value;
+      }
+    }
+
+    if(shared.sausage !== undefined){
+      const value=Number(shared.sausage);
+
+      if(Number.isFinite(value)){
+        state.sausage=value;
+      }
+    }
+
+    if(shared.stage){
+      state.stage=shared.stage;
+    }
+
+    if(shared.verified===true){
+      state.verified=true;
+    }
+
+    if(shared.resolved===true){
+      state.resolved=true;
+    }
+
+    if(shared.closed===true){
+      state.closed=true;
+    }
+
+    if(shared.ack===true){
+      state.ack=true;
+    }
+
+    /*
+     * ACEASTA este confirmarea Depozitului.
+     */
+    if(shared.warehouseAcknowledged===true){
+      state.warehouseAcknowledged=true;
+    }
+  }
+
+  /*
+   * ============================================================
+   * NOTIFICAREA AUTOMATĂ A DEPOZITULUI
+   * ============================================================
+   */
+
   function notifyWarehouseFromAgent(){
 
-    if(role()!=='agent') return;
+    if(role()!=='agent'){
+      return;
+    }
 
     const current=read();
 
     /*
-     * Nu suprascriem o confirmare deja făcută de Depozit.
+     * Dacă Depozitul a confirmat deja,
+     * nu mai modificăm starea.
      */
     if(current.warehouseAcknowledged===true){
       return;
     }
 
-    /*
-     * O comandă aflată în diferență înseamnă că Depozitul
-     * trebuie reverificat.
-     */
-    const stage=document.getElementById('stage')?.value || current.stage || 'difference';
+    const stage=
+      document.getElementById('stage')?.value ||
+      current.stage ||
+      'difference';
 
-    if(stage==='difference' || stage==='picking'){
+    if(
+      stage==='difference' ||
+      stage==='picking'
+    ){
 
       write({
         stage:stage,
@@ -198,29 +297,62 @@ const state = {
   }
 
   /*
-   * Mesajul vizibil Agentului.
+   * ============================================================
+   * MESAJ AGENT
+   * ============================================================
    */
+
   function updateAgentMessage(){
 
-    if(role()!=='agent') return;
+    if(role()!=='agent'){
+      return;
+    }
+
+    /*
+     * ÎNTÂI sincronizăm state-ul.
+     * ABIA APOI citim mesajul.
+     */
+    syncAgentFromShared();
 
     const current=read();
-    const msg=document.getElementById('agentMsg');
 
-    if(!msg) return;
+    const msg=
+      document.getElementById('agentMsg');
 
-    if(current.warehouseAcknowledged===true){
+    if(!msg){
+      return;
+    }
 
-      msg.textContent='Depozitul a confirmat reverificarea.';
+    /*
+     * Prioritatea 1:
+     * Depozitul a confirmat reverificarea.
+     */
+    if(
+      current.warehouseAcknowledged===true ||
+      state.warehouseAcknowledged===true
+    ){
+
+      msg.textContent=
+        'Depozitul a confirmat reverificarea.';
+
       msg.style.color='#287a43';
       msg.style.fontWeight='800';
 
       return;
     }
 
-    if(current.verified===true){
+    /*
+     * Prioritatea 2:
+     * Depozitul a fost notificat.
+     */
+    if(
+      current.verified===true ||
+      state.verified===true
+    ){
 
-      msg.textContent='Depozitul a fost notificat pentru reverificare.';
+      msg.textContent=
+        'Depozitul a fost notificat pentru reverificare.';
+
       msg.style.color='';
       msg.style.fontWeight='800';
 
@@ -228,29 +360,42 @@ const state = {
     }
 
     /*
-     * Dacă există diferență, notificarea se creează automat.
+     * Dacă există diferență, notificarea este creată automat.
      */
-    const stage=document.getElementById('stage')?.value || current.stage;
+    const stage=
+      document.getElementById('stage')?.value ||
+      state.stage ||
+      current.stage;
 
     if(stage==='difference'){
 
+      state.verified=true;
+      state.warehouseAcknowledged=false;
+
       write({
         verified:true,
-        warehouseAcknowledged:false
+        warehouseAcknowledged:false,
+        stage:'difference'
       });
 
-      msg.textContent='Depozitul a fost notificat pentru reverificare.';
+      msg.textContent=
+        'Depozitul a fost notificat pentru reverificare.';
+
       msg.style.fontWeight='800';
     }
   }
 
   /*
-   * Păstrăm acțiunile permise Agentului.
-   * Nu există verifyBtn.
+   * ============================================================
+   * PERSIST AGENT
+   * ============================================================
    */
+
   function persistAgent(){
 
-    if(role()!=='agent') return;
+    if(role()!=='agent'){
+      return;
+    }
 
     const current=read();
 
@@ -264,17 +409,24 @@ const state = {
         ? 'difference'
         : stage;
 
+    /*
+     * IMPORTANT:
+     * Nu ștergem warehouseAcknowledged.
+     */
     write({
 
       stage:safeStage,
 
-      /*
-       * Agentul nu poate crea verificarea.
-       * Dacă verified există deja, provine din fluxul shared.
-       */
-      verified:current.verified===true,
+      verified:
+        current.verified===true ||
+        state.verified===true,
 
-      resolved:safeStage==='resolved',
+      warehouseAcknowledged:
+        current.warehouseAcknowledged===true ||
+        state.warehouseAcknowledged===true,
+
+      resolved:
+        safeStage==='resolved',
 
       closed:
         !!document.getElementById('closedPanel') &&
@@ -283,7 +435,9 @@ const state = {
     });
 
     removeAgentVerification();
+
     notifyWarehouseFromAgent();
+
     updateAgentMessage();
   }
 
@@ -295,32 +449,43 @@ const state = {
 
   function saveWarehouse(){
 
-    if(role()!=='warehouse') return;
+    if(role()!=='warehouse'){
+      return;
+    }
 
     try{
 
       const current=read();
 
       const salami=Number(
-        document.getElementById('salamiInput')?.value ?? current.salami ?? 6
+        document.getElementById('salamiInput')?.value ??
+        current.salami ??
+        6
       );
 
       const sausage=Number(
-        document.getElementById('sausageInput')?.value ?? current.sausage ?? 0
+        document.getElementById('sausageInput')?.value ??
+        current.sausage ??
+        0
       );
 
       write({
 
-        salami:Number.isFinite(salami) ? salami : current.salami,
+        salami:
+          Number.isFinite(salami)
+            ? salami
+            : current.salami,
 
-        sausage:Number.isFinite(sausage) ? sausage : current.sausage,
+        sausage:
+          Number.isFinite(sausage)
+            ? sausage
+            : current.sausage,
 
         /*
-         * Important:
-         * reverification rămâne activă până când Depozitul
-         * confirmă explicit.
+         * Păstrăm confirmarea existentă.
          */
-        verified:current.verified===true,
+        verified:
+          current.verified===true,
 
         warehouseAcknowledged:
           current.warehouseAcknowledged===true
@@ -331,14 +496,19 @@ const state = {
 
   function restoreWarehouse(){
 
-    if(role()!=='warehouse') return;
+    if(role()!=='warehouse'){
+      return;
+    }
 
     try{
 
       const current=read();
 
-      const salami=document.getElementById('salamiInput');
-      const sausage=document.getElementById('sausageInput');
+      const salami=
+        document.getElementById('salamiInput');
+
+      const sausage=
+        document.getElementById('sausageInput');
 
       if(
         salami &&
@@ -358,12 +528,20 @@ const state = {
   }
 
   /*
-   * Confirmarea finală a reverificării de către Depozit.
+   * ============================================================
+   * CONFIRMAREA REVERIFICĂRII DE CĂTRE DEPOZIT
+   * ============================================================
    */
+
   function warehouseConfirmed(){
 
-    if(role()!=='warehouse') return;
+    if(role()!=='warehouse'){
+      return;
+    }
 
+    /*
+     * ACEASTA este starea care trebuie transmisă Agentului.
+     */
     write({
 
       verified:true,
@@ -372,7 +550,19 @@ const state = {
     });
 
     /*
-     * Reîmprospătăm mesajul în Agent.
+     * Actualizăm și obiectul local.
+     */
+    try{
+
+      if(typeof state!=='undefined'){
+        state.verified=true;
+        state.warehouseAcknowledged=true;
+      }
+
+    }catch(_){}
+
+    /*
+     * Păstrăm starea după eventuala reafișare.
      */
     setTimeout(()=>{
 
@@ -392,20 +582,24 @@ const state = {
   function install(){
 
     /*
-     * Butoane Depozit.
+     * Acțiuni Depozit.
      */
     [
       'finishPickingBtn',
       'completeAllBtn'
     ].forEach(id=>{
 
-      const el=document.getElementById(id);
+      const el=
+        document.getElementById(id);
 
       if(el){
 
         el.addEventListener(
           'click',
-          ()=>setTimeout(saveWarehouse,100)
+          ()=>setTimeout(
+            saveWarehouse,
+            100
+          )
         );
       }
 
@@ -415,13 +609,18 @@ const state = {
      * Confirmarea reverificării.
      */
     const warehouseAck=
-      document.getElementById('warehouseAcknowledgeBtn');
+      document.getElementById(
+        'warehouseAcknowledgeBtn'
+      );
 
     if(warehouseAck){
 
       warehouseAck.addEventListener(
         'click',
-        ()=>setTimeout(warehouseConfirmed,150)
+        ()=>setTimeout(
+          warehouseConfirmed,
+          150
+        )
       );
     }
 
@@ -435,32 +634,41 @@ const state = {
       'stage'
     ].forEach(id=>{
 
-      const el=document.getElementById(id);
+      const el=
+        document.getElementById(id);
 
       if(el){
 
         el.addEventListener(
           'click',
-          ()=>setTimeout(persistAgent,100)
+          ()=>setTimeout(
+            persistAgent,
+            100
+          )
         );
       }
 
     });
 
     /*
-     * Inițializare imediată.
+     * Inițializare.
      */
     removeAgentVerification();
 
     if(role()==='warehouse'){
+
       restoreWarehouse();
       saveWarehouse();
+
     }
 
     if(role()==='agent'){
+
+      syncAgentFromShared();
       persistAgent();
       notifyWarehouseFromAgent();
       updateAgentMessage();
+
     }
 
     /*
@@ -468,17 +676,17 @@ const state = {
      */
     setInterval(()=>{
 
-      const currentRole=role();
-
-      if(currentRole==='agent'){
+      if(role()==='agent'){
 
         removeAgentVerification();
+
+        syncAgentFromShared();
+
         notifyWarehouseFromAgent();
+
         updateAgentMessage();
 
-      }
-
-      if(currentRole==='warehouse'){
+      }else if(role()==='warehouse'){
 
         restoreWarehouse();
 
@@ -489,31 +697,38 @@ const state = {
 
   /*
    * ============================================================
-   * CROSS-TAB SYNC
+   * CROSS-TAB / CROSS-CONTEXT SYNC
    * ============================================================
    */
 
-  window.addEventListener('storage',event=>{
+  window.addEventListener(
+    'storage',
+    event=>{
 
-    if(event.key!==KEY){
-      return;
+      if(event.key!==KEY){
+        return;
+      }
+
+      if(role()==='agent'){
+
+        syncAgentFromShared();
+
+        removeAgentVerification();
+
+        updateAgentMessage();
+
+      }else if(role()==='warehouse'){
+
+        restoreWarehouse();
+
+      }
+
     }
+  );
 
-    if(role()==='agent'){
-
-      removeAgentVerification();
-      updateAgentMessage();
-
-    }
-
-    if(role()==='warehouse'){
-
-      restoreWarehouse();
-
-    }
-
-  });
-
+  /*
+   * Pornire.
+   */
   if(document.readyState==='loading'){
 
     document.addEventListener(
@@ -532,66 +747,84 @@ const state = {
 
   out=out.replace(
     '</body></html>',
-    patch+'\\n</body></html>'
+    patch+'\n</body></html>'
   );
 
-  return new Response(out,{
-    status:response.status,
-    headers:{
-      'Content-Type':'text/html; charset=utf-8',
-      'Cache-Control':'no-store'
+  return new Response(
+    out,
+    {
+      status:response.status,
+      headers:{
+        'Content-Type':
+          'text/html; charset=utf-8',
+        'Cache-Control':'no-store'
+      }
     }
-  });
+  );
 }
 
-self.addEventListener('fetch',event=>{
+self.addEventListener(
+  'fetch',
+  event=>{
 
-  if(event.request.method!=='GET'){
-    return;
-  }
+    if(event.request.method!=='GET'){
+      return;
+    }
 
-  const url=new URL(event.request.url);
+    const url=
+      new URL(event.request.url);
 
-  const isIndex=
-    url.pathname==='/' ||
-    url.pathname==='/index.html';
+    const isIndex=
+      url.pathname==='/' ||
+      url.pathname==='/index.html';
 
-  event.respondWith(
+    event.respondWith(
 
-    (async()=>{
+      (async()=>{
 
-      try{
+        try{
 
-        const response=
-          await fetch(
-            event.request,
-            {cache:'no-store'}
-          );
+          const response=
+            await fetch(
+              event.request,
+              {cache:'no-store'}
+            );
 
-        if(isIndex && response.ok){
+          if(
+            isIndex &&
+            response.ok
+          ){
 
-          return transformIndex(response);
-        }
+            return transformIndex(response);
+          }
 
-        const copy=response.clone();
+          const copy=
+            response.clone();
 
-        caches.open(CACHE)
-          .then(cache=>{
-            cache.put(event.request,copy);
-          });
+          caches.open(CACHE)
+            .then(cache=>{
+              cache.put(
+                event.request,
+                copy
+              );
+            });
 
-        return response;
+          return response;
 
-      }catch(_){
+        }catch(_){
 
-        return caches.match(event.request)
-          .then(
+          return caches.match(
+            event.request
+          ).then(
             cached=>
               cached ||
-              caches.match('/index.html')
+              caches.match(
+                '/index.html'
+              )
           );
-      }
+        }
 
-    })()
-  );
-});
+      })()
+    );
+  }
+);
