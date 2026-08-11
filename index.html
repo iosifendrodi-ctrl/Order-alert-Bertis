@@ -612,5 +612,97 @@ function OA_v7_renderIntegrity(el, totals, warn, critical){
 }
 </script>
 
+<script>
+/* ORDER ALERT V1.9 FINAL FLOW */
+(function () {
+  function applyAgentRules() {
+    var agent = document.getElementById('agent');
+    if (!agent || agent.classList.contains('hidden')) return;
 
+    /* Agentul nu mai poate solicita verificarea */
+    var verifyBtn = document.getElementById('verifyBtn');
+    if (verifyBtn) verifyBtn.remove();
+
+    /* Agentul nu mai poate selecta "Verificare solicitată" */
+    var stage = document.getElementById('stage');
+    if (stage) {
+      Array.prototype.slice.call(stage.options).forEach(function (option) {
+        if (
+          option.value === 'verification' ||
+          option.textContent.trim() === 'Verificare solicitată'
+        ) {
+          option.remove();
+        }
+      });
+
+      if (stage.value === 'verification') {
+        stage.value = 'difference';
+      }
+    }
+
+    /*
+     * Dacă există diferență și depozitul nu a confirmat încă,
+     * notificarea este creată automat.
+     */
+    if (
+      typeof state !== 'undefined' &&
+      state.stage === 'difference' &&
+      !state.closed
+    ) {
+      if (!state.verified) {
+        state.verified = true;
+        state.warehouseAcknowledged = false;
+
+        if (typeof addEvent === 'function') {
+          addEvent(
+            'Diferență detectată — depozitul a fost notificat automat pentru reverificare'
+          );
+        }
+      }
+
+      var msg = document.getElementById('agentMsg');
+
+      if (msg) {
+        if (state.warehouseAcknowledged) {
+          msg.textContent =
+            'Depozitul a confirmat reverificarea.';
+          msg.style.color = '#287a43';
+          msg.style.fontWeight = '800';
+        } else {
+          msg.textContent =
+            'Depozitul a fost notificat pentru reverificare.';
+          msg.style.fontWeight = '800';
+        }
+      }
+    }
+
+    /*
+     * Dacă Depozitul a confirmat deja reverificarea,
+     * Agentul vede confirmarea.
+     */
+    if (
+      typeof state !== 'undefined' &&
+      state.warehouseAcknowledged
+    ) {
+      var confirmedMsg = document.getElementById('agentMsg');
+
+      if (confirmedMsg) {
+        confirmedMsg.textContent =
+          'Depozitul a confirmat reverificarea.';
+        confirmedMsg.style.color = '#287a43';
+        confirmedMsg.style.fontWeight = '800';
+      }
+    }
+  }
+
+  /*
+   * Reaplicăm regulile după fiecare schimbare de rol / render.
+   */
+  applyAgentRules();
+
+  setInterval(function () {
+    applyAgentRules();
+  }, 500);
+})();
+</script>
 </body></html>
