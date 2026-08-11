@@ -69,10 +69,8 @@ async function transformIndex(response){
         closed:!!document.getElementById('closedPanel') &&
           !document.getElementById('closedPanel').classList.contains('hidden'),
         ack:document.getElementById('ackBtn')?.textContent?.includes('ALERTĂ VĂZUTĂ') || false,
-        warehouseAcknowledged:
-          warehouseAcknowledged:
-  old.warehouseAcknowledged === true,
-        updatedAt:Date.now()
+        warehouseAcknowledged: read().warehouseAcknowledged === true,
+      updatedAt:Date.now()
       };
       localStorage.setItem(KEY,JSON.stringify({...read(),...s}));
     }catch(_){}
