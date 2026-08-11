@@ -134,7 +134,24 @@ async function transformIndex(response){
       const e=document.getElementById(id);
       if(e) e.addEventListener('click',()=>setTimeout(writeWarehouseState,80));
     });
+const warehouseAck=document.getElementById('warehouseAcknowledgeBtn');
 
+if(warehouseAck){
+  warehouseAck.addEventListener('click',()=>{
+    setTimeout(()=>{
+      try{
+        const old=read();
+
+        localStorage.setItem(KEY,JSON.stringify({
+          ...old,
+          warehouseAcknowledged:true,
+          verified:true,
+          updatedAt:Date.now()
+        }));
+      }catch(_){}
+    },120);
+  });
+}
     ['ackBtn','verifyBtn','resolveBtn','closeOrderBtn','stage'].forEach(id=>{
       const e=document.getElementById(id);
       if(e) e.addEventListener('click',()=>setTimeout(persistAgentState,80));
