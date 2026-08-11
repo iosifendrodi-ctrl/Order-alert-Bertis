@@ -70,9 +70,8 @@ async function transformIndex(response){
           !document.getElementById('closedPanel').classList.contains('hidden'),
         ack:document.getElementById('ackBtn')?.textContent?.includes('ALERTĂ VĂZUTĂ') || false,
         warehouseAcknowledged:
-          statusText.includes('REVERIFICARE CONFIRMATĂ') ||
-          buttonText.includes('REVERIFICARE CONFIRMATĂ') ||
-          buttonText.includes('✓ REVERIFICARE CONFIRMATĂ'),
+          warehouseAcknowledged:
+  old.warehouseAcknowledged === true,
         updatedAt:Date.now()
       };
       localStorage.setItem(KEY,JSON.stringify({...read(),...s}));
