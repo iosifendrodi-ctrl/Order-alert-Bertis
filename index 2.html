@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#9b1c24">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Order Alert">
+<title>Order Alert</title>
+<style>
+*{box-sizing:border-box}
+:root{--red:#9b1c24;--red2:#74131a;--paper:#faf8f5;--ink:#171717;--muted:#6b6865;--border:#e5dfd8;--green:#287a43;--amber:#9a6500;--blue:#315f8c}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.top{background:linear-gradient(135deg,#171717,#292929);color:#fff;padding:17px 18px 18px;position:sticky;top:0;z-index:10;border-bottom:4px solid var(--red)}
+.brand{font-weight:950;letter-spacing:1.5px;font-size:22px}.sub{margin:5px 0 0;opacity:.72;font-size:12px}
+.wrap{max-width:760px;margin:auto;padding:14px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px;position:sticky;top:82px;z-index:8}
+.tabs button,.btn{border:0;border-radius:11px;padding:11px 7px;font-weight:850;cursor:pointer;touch-action:manipulation}
+.tabs button{background:#fff;border:1px solid var(--border);color:var(--ink)}.tabs button.active{background:var(--red);border-color:var(--red);color:#fff}
+.panel,.metric{background:#fff;border:1px solid var(--border);border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 3px 14px #3a241008}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric{margin:0}.n{font-size:24px;font-weight:950}.muted{color:var(--muted);font-size:13px}
+.badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:850}.red{background:#f8e8e8;color:var(--red2)}.green{background:#e8f5ec;color:var(--green)}.amber{background:#fff4d6;color:var(--amber)}.blue{background:#eaf1f7;color:var(--blue)}
+.line{padding:11px 0;border-bottom:1px solid #eee8e2}.btn{width:100%;margin-top:8px;background:var(--red);color:#fff;font-size:15px}.btn:hover{background:var(--red2)}.btn.light{background:#f1eeea;color:var(--ink)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.input,.select{width:100%;padding:12px;border:1px solid #d6d0ca;border-radius:10px;background:#fff;font-size:15px}.qty{display:flex;gap:8px;align-items:center}.qty input{width:110px}
+.hidden{display:none!important}.danger{background:#fbefee;border-left:5px solid var(--red);border-radius:12px;padding:13px}.ok{background:#e8f5ec;border-left:5px solid var(--green);border-radius:12px;padding:13px}.notice{background:#f4eee8;border-left:4px solid var(--red);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}
+.timeline{border-left:3px solid #d8cfc7;margin:10px 0 0 6px;padding-left:14px}.event{margin:0 0 14px}.event b{display:block}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.status{font-weight:900}.small{font-size:12px}
+@media(max-width:520px){.tabs button{font-size:11px;padding:10px 3px}.metrics{grid-template-columns:1fr 1fr 1fr}.metric{padding:12px 10px}}
+</style>
+<!-- OA_SHARED_COHERENT_FLOW_V1 -->
+</head>
+<body>
+<header class="top"><div class="brand">ORDER ALERT</div><div class="sub">Demo operațional • sincronizare Agent ↔ Supabase ↔ Depozit</div></header>
+<main class="wrap">
+<div class="tabs">
+<button id="agentTab" class="active">👤 Agent</button>
+<button id="managerTab">💼 Management</button>
+<button id="warehouseTab">🏭 Depozit</button>
+<button id="historyTab">🗂️ Istoric</button>
+</div>
+
+<section id="agent">
+<div class="panel">
+<div class="row"><div><b>🔔 Alerte agent</b><div id="agentSummary" class="muted">Se conectează...</div></div><span id="agentBadge" class="badge red">0</span></div>
+<button id="enableNotificationsBtn" class="btn light">ACTIVEAZĂ NOTIFICĂRI</button>
+</div>
+<div class="panel">
+<div class="row"><span id="agentStatusBadge" class="badge red">DIFERENȚĂ DETECTATĂ</span><span id="agentConnection" class="badge amber">SYNC...</span></div>
+<h2>Comanda #12548</h2><div class="muted">Client HoReCa • Agent A</div>
+<div class="line"><b>Salam de iarnă</b><br>Comandat: <b>10 kg</b> · Pregătit: <b id="agentSalami">6 kg</b> · Lipsă: <b id="agentSalamiMissing">4 kg</b></div>
+<div class="line"><b>Cârnații Bunicii</b><br>Comandat: <b>6 kg</b> · Pregătit: <b id="agentSausage">0 kg</b> · Lipsă: <b id="agentSausageMissing">6 kg</b></div>
+<div id="agentAlert" class="danger" style="margin-top:12px"><b>🔴 ALERTĂ</b><br><span id="agentAlertText">Așteptăm starea depozitului.</span></div>
+<button id="ackBtn" class="btn light" disabled>AM VĂZUT</button>
+<div id="agentMsg" class="muted" style="margin-top:10px"></div>
+</div>
+</section>
+
+<section id="manager" class="hidden">
+<div class="metrics"><div class="metric"><div class="muted">Comandă</div><div class="n">#12548</div></div><div class="metric"><div class="muted">Stare</div><div id="managerStatus" class="n">—</div></div><div class="metric"><div class="muted">Agent</div><div id="managerSeen" class="n">—</div></div></div>
+<div class="panel"><h2>Control comandă</h2><div id="managerMessage" class="notice">Se încarcă...</div><div class="line">Depozit notificat: <b id="managerNotified">—</b></div><div class="line">Agent a văzut alerta: <b id="managerAgentSeen">—</b></div><div class="line">Închisă: <b id="managerClosed">—</b></div></div>
+</section>
+
+<section id="warehouse" class="hidden">
+<div class="panel">
+<div class="row"><span class="badge blue">DEPozit</span><span id="warehouseConnection" class="badge amber">SYNC...</span></div>
+<h2>Comanda #12548</h2><div class="muted">Introdu cantitatea efectiv pregătită.</div>
+<div class="line"><b>Salam de iarnă</b><div class="qty" style="margin-top:8px"><input id="salamiInput" class="input" type="number" min="0" max="10" value="6"><span>din 10 kg</span></div></div>
+<div class="line"><b>Cârnații Bunicii</b><div class="qty" style="margin-top:8px"><input id="sausageInput" class="input" type="number" min="0" max="6" value="0"><span>din 6 kg</span></div></div>
+<button id="finishPickingBtn" class="btn">FINALIZEAZĂ PICKING</button>
+<button id="completeAllBtn" class="btn light">COMPLETEAZĂ TOT</button>
+</div>
+<div class="panel">
+<h3>Stare flux</h3><div id="warehouseFlow" class="notice">Așteaptă finalizarea picking-ului.</div>
+<button id="closeOrderBtn" class="btn" disabled>ÎNCHIDE COMANDA</button>
+</div>
+</section>
+
+<section id="history" class="hidden">
+<div class="panel"><h2>🗂️ Istoric comandă #12548</h2><div id="historySummary" class="muted">Se încarcă...</div><div id="historyTimeline" class="timeline"></div></div>
+</section>
+
+<div id="toast" class="panel hidden" style="position:fixed;left:14px;right:14px;bottom:14px;z-index:30;background:#171717;color:#fff"></div>
+</main>
+
+<script>
+const API_URL='https://lvgvdlnaeqwpmvtpnepe.supabase.co/functions/v1/order-alert-demo';
+const API_TOKEN=['order','alert','demo','v1'].join('-');
+const H={'Content-Type':'application/json','x-order-alert-demo':API_TOKEN};
+let order=null,events=[];
+const $=id=>document.getElementById(id);
+function toast(t){const e=$('toast');e.textContent=t;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),2200)}
+function fmt(v){return v?new Date(v).toLocaleString('ro-RO'):'—'}
+function yn(v){return v?'DA':'NU'}
+async function api(action,data={}){const o=action?{method:'POST',headers:H,body:JSON.stringify({action,...data})}:{headers:H,cache:'no-store'};const r=await fetch(API_URL,o),j=await r.json();if(!r.ok)throw Error(j.error||'API error');return j}
+async function load(){try{const j=await api();order=j.order;events=j.events||[];render()}catch(e){console.error(e);$('agentConnection').textContent='EROARE';$('agentConnection').className='badge red';$('warehouseConnection').textContent='EROARE';$('warehouseConnection').className='badge red';toast('Nu s-a putut conecta la Order Alert.')}}
+function render(){if(!order)return;const c=order.status==='closed';$('agentConnection').textContent='CONECTAT';$('agentConnection').className='badge green';$('warehouseConnection').textContent='CONECTAT';$('warehouseConnection').className='badge green';$('agentSalami').textContent=order.salami_actual+' kg';$('agentSalamiMissing').textContent=Math.max(0,order.salami_ordered-order.salami_actual)+' kg';$('agentSausage').textContent=order.sausage_actual+' kg';$('agentSausageMissing').textContent=Math.max(0,order.sausage_ordered-order.sausage_actual)+' kg';$('agentStatusBadge').textContent=c?'ÎNCHISĂ':'DIFERENȚĂ DETECTATĂ';$('agentStatusBadge').className='badge '+(c?'green':'red');if(c){$('agentSummary').textContent='Comanda este închisă.';$('agentBadge').textContent='0';$('agentAlertText').textContent='Comanda a fost închisă de Depozit.';$('agentAlert').className='ok';$('ackBtn').disabled=true;$('agentMsg').textContent='Comanda a fost închisă și este în Istoric.'}else if(order.warehouse_notified&&!order.agent_seen){$('agentSummary').textContent='Depozitul a fost notificat pentru reverificare.';$('agentBadge').textContent='1';$('agentAlertText').textContent='Depozitul a fost notificat pentru reverificare.';$('agentAlert').className='danger';$('ackBtn').disabled=false;$('agentMsg').textContent=''}else if(order.warehouse_notified&&order.agent_seen){$('agentSummary').textContent='Ai văzut alerta.';$('agentBadge').textContent='0';$('agentAlertText').textContent='Alerta a fost văzută. Depozitul poate închide comanda.';$('agentAlert').className='ok';$('ackBtn').disabled=true;$('agentMsg').textContent='Alerta a fost confirmată de agent.'}else{$('agentSummary').textContent='Așteptăm finalizarea picking-ului în depozit.';$('agentBadge').textContent='0';$('agentAlertText').textContent='Așteptăm starea depozitului.';$('ackBtn').disabled=true;$('agentMsg').textContent=''}$('salamiInput').value=order.salami_actual;$('sausageInput').value=order.sausage_actual;$('finishPickingBtn').disabled=c;$('completeAllBtn').disabled=c;if(c){$('warehouseFlow').className='ok';$('warehouseFlow').textContent='Comanda este închisă.';$('closeOrderBtn').disabled=true}else if(order.warehouse_notified&&!order.agent_seen){$('warehouseFlow').className='notice';$('warehouseFlow').textContent='Depozitul a fost notificat. Așteaptă ca Agentul să vadă alerta.';$('closeOrderBtn').disabled=true}else if(order.warehouse_notified&&order.agent_seen){$('warehouseFlow').className='ok';$('warehouseFlow').textContent='Agentul a văzut alerta. Depozitul poate închide comanda.';$('closeOrderBtn').disabled=false}else{$('warehouseFlow').className='notice';$('warehouseFlow').textContent='Așteaptă finalizarea picking-ului.';$('closeOrderBtn').disabled=true}$('managerStatus').textContent=order.status;$('managerSeen').textContent=yn(order.agent_seen);$('managerNotified').textContent=yn(order.warehouse_notified);$('managerAgentSeen').textContent=yn(order.agent_seen);$('managerClosed').textContent=order.closed_at?fmt(order.closed_at):'NU';$('managerMessage').textContent=c?'Comanda este închisă.':order.agent_seen?'Agentul a văzut alerta; Depozitul poate închide.':order.warehouse_notified?'Așteptăm Agentul.':'Așteptăm Depozitul.';$('historySummary').textContent=c?'Închisă la '+fmt(order.closed_at):'Comanda nu este încă închisă.';$('historyTimeline').innerHTML=events.length?events.map(e=>'<div class="event"><b>'+e.event_type.replaceAll('_',' ')+'</b><span class="small">'+e.actor_role+' • '+fmt(e.created_at)+'</span></div>').join(''):'<div class="muted">Nu există evenimente încă.</div>'}
+async function finish(){if(!order||order.status==='closed')return;try{const s=Math.max(0,Math.min(10,Number($('salamiInput').value)||0)),u=Math.max(0,Math.min(6,Number($('sausageInput').value)||0));await api('finalize_picking',{salami_actual:s,sausage_actual:u});toast(s<10||u<6?'Diferența a fost înregistrată.':'Picking finalizat complet.');await load()}catch(e){toast('Eroare la salvarea picking-ului.')}}
+async function seen(){if(!order||order.status==='closed'||!order.warehouse_notified||order.agent_seen)return;try{await api('agent_seen');toast('Alerta a fost văzută.');await load()}catch(e){toast('Eroare la confirmarea alertei.')}}
+async function close(){if(!order||order.status==='closed'||!order.warehouse_notified||!order.agent_seen)return;try{await api('close_order');toast('Comanda a fost închisă.');await load()}catch(e){toast('Eroare la închiderea comenzii.')}}
+function role(r){['agent','manager','warehouse','history'].forEach(x=>$(x).classList.toggle('hidden',x!==r));['agentTab','managerTab','warehouseTab','historyTab'].forEach(x=>$(x).classList.remove('active'));$(r+'Tab').classList.add('active');render()}
+$('agentTab').onclick=()=>role('agent');$('managerTab').onclick=()=>role('manager');$('warehouseTab').onclick=()=>role('warehouse');$('historyTab').onclick=()=>role('history');$('finishPickingBtn').onclick=finish;$('completeAllBtn').onclick=()=>{$('salamiInput').value=10;$('sausageInput').value=6;finish()};$('ackBtn').onclick=seen;$('closeOrderBtn').onclick=close;$('enableNotificationsBtn').onclick=async()=>{if(!('Notification'in window))return toast('Notificările browserului nu sunt disponibile.');const p=await Notification.requestPermission();toast(p==='granted'?'Notificările au fost activate.':'Notificările nu au fost activate.')};
+let previous=false;setInterval(async()=>{try{const before=order?.warehouse_notified;await load();if(order?.warehouse_notified&&!before&&!order.agent_seen&&'Notification'in window&&Notification.permission==='granted')new Notification('Order Alert',{body:'Depozitul a fost notificat pentru reverificarea comenzii #12548.'});previous=order?.warehouse_notified===true}catch(e){}},1500);load();
+</script>
+</body>
+</html>
