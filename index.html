@@ -83,7 +83,7 @@ const SUPABASE_URL="https://lvgvdlnaeqwpmvtpnepe.supabase.co";
 const SUPABASE_KEY="sb_publishable_ius_vWvKHsi5D9amk1gSPQ_xs9MeTDB";
 const ORDER_NUMBER="12548";
 const H={"apikey":SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=representation"};
-let order=null,events=[],role="agent",busy=false;
+let order=null,events=[],role="agent",busy=false,pickingDirty=false;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function load(){
@@ -120,7 +120,10 @@ $("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă
  $("ackBtn").disabled=!order.warehouse_notified||order.agent_seen||order.status==="closed";
  $("ackBtn").textContent=order.agent_seen?"✓ ALERTĂ VĂZUTĂ":"AM VĂZUT";
  $("agentMsg").textContent=order.agent_seen?"Agentul a confirmat vizualizarea alertei.":"";
- $("salamiInput").value=order.salami_actual;$("sausageInput").value=order.sausage_actual;
+ if(!pickingDirty){
+  $("salamiInput").value=order.salami_actual;
+  $("sausageInput").value=order.sausage_actual;
+}
  $("finishPickingBtn").disabled=order.status!=="picking";
  const canClose=order.warehouse_notified&&order.agent_seen&&order.status!=="closed";
  $("closeOrderBtn").classList.toggle("hidden",!canClose);$("closeOrderBtn").disabled=!canClose;
@@ -137,7 +140,8 @@ async function finalize(){
   await patch({salami_actual:s,sausage_actual:u,status:diff?"difference":"resolved",warehouse_notified:diff,agent_seen:false,closed_at:null});
   await event("picking_finalized","warehouse",{salami_actual:s,sausage_actual:u});
   if(diff)await event("warehouse_notified","system",{reason:"picking_difference"});
-  await load();
+  pickingDirty=false;
+await load();
  }catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
 }
 async function seen(){
@@ -154,7 +158,17 @@ function show(r){
  render();
 }
 $("agentTab").onclick=()=>show("agent");$("managerTab").onclick=()=>show("manager");$("warehouseTab").onclick=()=>show("warehouse");$("historyTab").onclick=()=>show("history");
-$("finishPickingBtn").onclick=finalize;$("ackBtn").onclick=seen;$("closeOrderBtn").onclick=close;
+$("finishPickingBtn").onclick=finalize;
+$("ackBtn").onclick=seen;
+$("closeOrderBtn").onclick=close;
+
+$("salamiInput").addEventListener("input",()=>{
+  pickingDirty=true;
+});
+
+$("sausageInput").addEventListener("input",()=>{
+  pickingDirty=true;
+});
 load().catch(e=>{$("agentMsg").textContent=e.message;$("warehouseMsg").textContent=e.message});
 setInterval(()=>load().catch(()=>{}),1500);
 </script>
