@@ -82,7 +82,7 @@ body{margin:0;background:var(--p);color:var(--i);font-family:-apple-system,Blink
 const SUPABASE_URL="https://lvgvdlnaeqwpmvtpnepe.supabase.co";
 const SUPABASE_KEY="sb_publishable_iusvWvKHsi5D9amk1gSPQ_xs9MeTDB";
 const ORDER_NUMBER="12548";
-const H={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=representation"};
+const H={"apikey":SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=representation"};
 let order=null,events=[],role="agent",busy=false;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
