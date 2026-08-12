@@ -25,152 +25,376 @@ body{margin:0;background:var(--p);color:var(--i);font-family:-apple-system,Blink
 .notice{background:#f4eee8;border-left:4px solid var(--r);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}
 .danger{background:#fbefee;border-left:5px solid var(--r);border-radius:12px;padding:13px}.ok{background:#e8f5ec;border-left:5px solid var(--g);border-radius:12px;padding:13px}
 .hidden{display:none}.event{padding:9px 0;border-bottom:1px solid #eee8e2}
-@media(max-width:520px){.tabs button{font-size:11px}.metrics{grid-template-columns:1fr 1fr 1fr}}
+.login{max-width:480px;margin:30px auto}.login h1{margin-top:0}.login-actions{display:grid;grid-template-columns:1fr;gap:7px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}.topbar .btn{width:auto;margin:0;padding:8px 11px;font-size:12px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.form-grid .full{grid-column:1/-1}
+.order-row{padding:11px 0;border-bottom:1px solid #eee8e2;cursor:pointer}.order-row:last-child{border-bottom:0}
+.small{font-size:12px}
+@media(max-width:520px){.tabs button{font-size:11px}.metrics{grid-template-columns:1fr 1fr 1fr}.form-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header class="top"><div class="brand">ORDER ALERT</div><div class="sub">Demo operațional • Agent ↔ Supabase ↔ Depozit</div></header>
+<header class="top">
+  <div class="topbar">
+    <div><div class="brand">ORDER ALERT</div><div class="sub">Demo operațional • Agent ↔ Supabase ↔ Depozit</div></div>
+    <button id="logoutBtn" class="btn light hidden" type="button">IEȘIRE</button>
+  </div>
+</header>
+
 <main class="wrap">
-<div class="tabs">
-<button id="agentTab" class="active">👤 Agent</button>
-<button id="managerTab">💼 Management</button>
-<button id="warehouseTab">🏭 Depozit</button>
-<button id="historyTab">🗂️ Istoric</button>
-</div>
-
-<section id="agent">
-<div class="panel">
-<span id="agentBadge" class="badge blue">AȘTEPTARE</span>
-<h2>Comanda #12548</h2>
-<div class="muted">Client HoReCa • Agent A</div>
-<div class="line"><b>Salam de iarnă ORDER ALERT</b><br>Comandat: <b>10 kg</b> · Pregătit: <b id="aSalami">6 kg</b> · Lipsă: <b id="aSalamiMissing">4 kg</b></div>
-<div class="line"><b>Cârnații Bunicii ORDER ALERT</b><br>Comandat: <b>6 kg</b> · Pregătit: <b id="aSausage">0 kg</b> · Lipsă: <b id="aSausageMissing">6 kg</b></div>
-<div id="agentNotice" class="notice" style="margin-top:12px">Se așteaptă finalizarea pickingului de către Depozit.</div>
-<button class="btn light" id="ackBtn" type="button">AM VĂZUT</button>
-<div id="agentMsg" class="muted" style="margin-top:9px"></div>
-</div>
-<div class="metrics"><div class="metric"><div class="muted">🔴 Alertă</div><div class="n" id="agentAlert">0</div></div><div class="metric"><div class="muted">👁 Văzută</div><div class="n" id="agentSeen">0</div></div><div class="metric"><div class="muted">✓ Închisă</div><div class="n" id="agentClosed">0</div></div></div>
+<section id="loginView" class="login">
+  <div class="panel">
+    <span class="badge blue">AUTENTIFICARE</span>
+    <h1>Order Alert</h1>
+    <p class="muted">Intră cu utilizatorul alocat rolului tău.</p>
+    <label class="muted">Email</label>
+    <input id="emailInput" class="input" type="email" autocomplete="username">
+    <label class="muted" style="display:block;margin-top:10px">Parolă</label>
+    <input id="passwordInput" class="input" type="password" autocomplete="current-password">
+    <button id="loginBtn" class="btn" type="button">INTRĂ ÎN APLICAȚIE</button>
+    <div id="loginMsg" class="muted" style="margin-top:9px"></div>
+  </div>
+  <div class="panel">
+    <h3>Utilizatori demo</h3>
+    <div class="login-actions">
+      <button class="btn light" type="button" data-demo-email="iosif.endrodi+manager@gmail.com">Manager — Endrodi</button>
+      <button class="btn light" type="button" data-demo-email="iosif.endrodi+agent@gmail.com">Agent — Iosif</button>
+      <button class="btn light" type="button" data-demo-email="iosif.endrodi+depozit@gmail.com">Depozit — Ana</button>
+    </div>
+  </div>
 </section>
 
-<section id="manager" class="hidden">
-<div class="panel"><h2>Management</h2><div id="managerDetail"></div></div>
-</section>
+<section id="appView" class="hidden">
+  <div class="panel">
+    <span id="roleBadge" class="badge blue"></span>
+    <div id="userLine" class="muted" style="margin-top:7px"></div>
+  </div>
 
-<section id="warehouse" class="hidden">
-<div class="panel">
-<span id="warehouseBadge" class="badge blue">PICKING</span>
-<h2>Comanda #12548</h2>
-<div class="muted">Depozit • cantități pregătite</div>
-<div class="qty" style="margin-top:12px">
-<div><label class="muted">Salam pregătit (kg)</label><input class="input" id="salamiInput" type="number" min="0" max="10" step="1" value="6"></div>
-<div><label class="muted">Cârnați pregătiți (kg)</label><input class="input" id="sausageInput" type="number" min="0" max="6" step="1" value="0"></div>
-</div>
-<button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button>
-<div id="warehouseNotice" class="notice" style="margin-top:12px">La finalizare, dacă există diferență, Agentul primește automat alerta.</div>
-<button class="btn light hidden" id="closeOrderBtn" type="button">ÎNCHIDE COMANDA</button>
-<div id="warehouseMsg" class="muted" style="margin-top:9px"></div>
-</div>
-<div class="panel"><h3>Starea Agentului</h3><div id="warehouseSeen">Agentul nu a văzut încă alerta.</div></div>
-</section>
+  <div id="tabs" class="tabs">
+    <button id="agentTab" type="button">👤 Agent</button>
+    <button id="managerTab" type="button">💼 Management</button>
+    <button id="warehouseTab" type="button">🏭 Depozit</button>
+    <button id="historyTab" type="button">🗂️ Istoric</button>
+  </div>
 
-<section id="history" class="hidden">
-<div class="panel"><h2>Istoric #12548</h2><div id="historyContent"></div></div>
+  <section id="agent" class="hidden">
+    <div class="panel">
+      <span id="agentBadge" class="badge blue">AȘTEPTARE</span>
+      <h2>Comanda <span class="orderNumber"></span></h2>
+      <div class="muted">Client: <span id="agentClient">—</span> • Agent: <span id="agentName">—</span></div>
+      <div class="line"><b>Salam de iarnă ORDER ALERT</b><br>Comandat: <b id="aSalamiOrdered">0 kg</b> · Pregătit: <b id="aSalami">0 kg</b> · Lipsă: <b id="aSalamiMissing">0 kg</b></div>
+      <div class="line"><b>Cârnații Bunicii ORDER ALERT</b><br>Comandat: <b id="aSausageOrdered">0 kg</b> · Pregătit: <b id="aSausage">0 kg</b> · Lipsă: <b id="aSausageMissing">0 kg</b></div>
+      <div id="agentNotice" class="notice" style="margin-top:12px"></div>
+      <button class="btn light" id="ackBtn" type="button">AM VĂZUT</button>
+      <div id="agentMsg" class="muted" style="margin-top:9px"></div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="muted">🔴 Alertă</div><div class="n" id="agentAlert">0</div></div>
+      <div class="metric"><div class="muted">👁 Văzută</div><div class="n" id="agentSeen">0</div></div>
+      <div class="metric"><div class="muted">✓ Închisă</div><div class="n" id="agentClosed">0</div></div>
+    </div>
+  </section>
+
+  <section id="manager" class="hidden">
+    <div class="panel">
+      <h2>Management</h2>
+      <div id="managerDetail"></div>
+    </div>
+    <div class="panel">
+      <h3>Creează comandă</h3>
+      <div class="form-grid">
+        <div class="full"><label class="muted">Număr comandă</label><input id="newOrderNumber" class="input" placeholder="ex. 12600"></div>
+        <div class="full"><label class="muted">Client</label><input id="newClient" class="input" placeholder="Client HoReCa"></div>
+        <div><label class="muted">Salam comandat (kg)</label><input id="newSalami" class="input" type="number" min="0" step="1" value="10"></div>
+        <div><label class="muted">Cârnați comandați (kg)</label><input id="newSausage" class="input" type="number" min="0" step="1" value="6"></div>
+        <div><label class="muted">Agent</label><select id="newAgent" class="input"></select></div>
+        <div><label class="muted">Depozit</label><select id="newWarehouse" class="input"></select></div>
+        <div class="full"><label><input id="newIsDemo" type="checkbox" checked> Comandă demo</label></div>
+      </div>
+      <button id="createOrderBtn" class="btn" type="button">CREEAZĂ COMANDA</button>
+      <div id="createOrderMsg" class="muted" style="margin-top:9px"></div>
+    </div>
+    <div class="panel">
+      <h3>Comenzi</h3>
+      <div id="managerOrders"></div>
+    </div>
+  </section>
+
+  <section id="warehouse" class="hidden">
+    <div class="panel">
+      <span id="warehouseBadge" class="badge blue">PICKING</span>
+      <h2>Comanda <span class="orderNumber"></span></h2>
+      <div class="muted">Depozit • cantități pregătite</div>
+      <div class="qty" style="margin-top:12px">
+        <div><label class="muted">Salam pregătit (kg)</label><input class="input" id="salamiInput" type="number" min="0" step="1" value="0"></div>
+        <div><label class="muted">Cârnați pregătiți (kg)</label><input class="input" id="sausageInput" type="number" min="0" step="1" value="0"></div>
+      </div>
+      <button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button>
+      <div id="warehouseNotice" class="notice" style="margin-top:12px"></div>
+      <button class="btn light hidden" id="closeOrderBtn" type="button">ÎNCHIDE COMANDA</button>
+      <div id="warehouseMsg" class="muted" style="margin-top:9px"></div>
+    </div>
+    <div class="panel"><h3>Starea Agentului</h3><div id="warehouseSeen"></div></div>
+  </section>
+
+  <section id="history" class="hidden">
+    <div class="panel"><h2>Istoric <span class="orderNumber"></span></h2><div id="historyContent"></div></div>
+  </section>
+
+  <section id="passwordSection">
+    <div class="panel">
+      <h3>Schimbă parola</h3>
+      <input id="newPassword" class="input" type="password" minlength="6" placeholder="Parolă nouă">
+      <button id="changePasswordBtn" class="btn light" type="button">SCHIMBĂ PAROLA</button>
+      <div id="passwordMsg" class="muted" style="margin-top:9px"></div>
+    </div>
+  </section>
 </section>
 </main>
 
 <script>
 const SUPABASE_URL="https://lvgvdlnaeqwpmvtpnepe.supabase.co";
 const SUPABASE_KEY="sb_publishable_ius_vWvKHsi5D9amk1gSPQ_xs9MeTDB";
-const ORDER_NUMBER="12548";
-const H={"apikey":SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=representation"};
-let order=null,events=[],role="agent",busy=false,pickingDirty=false;
+const HBase={"apikey":SUPABASE_KEY,"Content-Type":"application/json"};
+const ROLE_EMAILS={
+  manager:"iosif.endrodi+manager@gmail.com",
+  agent:"iosif.endrodi+agent@gmail.com",
+  warehouse:"iosif.endrodi+depozit@gmail.com"
+};
+let session=null,user=null,profile=null,order=null,events=[],currentOrderNumber=sessionStorage.getItem("order_alert_order")||null,busy=false,pickingDirty=false;
 const $=id=>document.getElementById(id);
-const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+
+function authHeaders(){
+  return {...HBase,Authorization:`Bearer ${session.access_token}`};
+}
+async function authFetch(path,options={}){
+  const headers={...authHeaders(),...(options.headers||{})};
+  return fetch(`${SUPABASE_URL}${path}`,{...options,headers});
+}
+async function signIn(email,password){
+  const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{
+    method:"POST",headers:HBase,body:JSON.stringify({email,password})
+  });
+  const data=await r.json();
+  if(!r.ok)throw Error(data.error_description||data.msg||"Autentificare nereușită");
+  session=data;sessionStorage.setItem("order_alert_session",JSON.stringify(data));
+}
+async function loadProfile(){
+  const r=await authFetch(`/rest/v1/order_alert_users?user_id=eq.${encodeURIComponent(user.id)}&select=user_id,display_name,role,active`);
+  if(!r.ok)throw Error("Nu am putut verifica rolul utilizatorului.");
+  const rows=await r.json();
+  profile=rows[0]||null;
+  if(!profile||!profile.active)throw Error("Utilizatorul nu are un rol activ în Order Alert.");
+}
+async function loadUsersForManager(){
+  if(profile.role!=="manager")return;
+  const r=await authFetch(`/rest/v1/order_alert_users?select=user_id,display_name,role,active&order=display_name.asc`);
+  if(!r.ok)throw Error("Nu am putut încărca utilizatorii.");
+  const rows=await r.json();
+  const agents=rows.filter(x=>x.role==="agent"&&x.active);
+  const warehouses=rows.filter(x=>x.role==="warehouse"&&x.active);
+  $("newAgent").innerHTML=agents.map(x=>`<option value="${esc(x.user_id)}">${esc(x.display_name)}</option>`).join("");
+  $("newWarehouse").innerHTML=warehouses.map(x=>`<option value="${esc(x.user_id)}">${esc(x.display_name)}</option>`).join("");
+}
+async function loadOrdersForManager(){
+  if(profile.role!=="manager")return;
+  const r=await authFetch(`/rest/v1/order_alert_orders?select=*&order=created_at.desc`);
+  if(!r.ok)throw Error("Nu am putut încărca lista comenzilor.");
+  const rows=await r.json();
+  $("managerOrders").innerHTML=rows.length?rows.map(o=>`
+    <div class="order-row" data-order="${esc(o.order_number)}">
+      <b>#${esc(o.order_number)}</b> — ${esc(o.client_name||"Client HoReCa")}
+      <span class="badge ${o.status==="closed"?"green":o.warehouse_notified&&!o.agent_seen?"red":"blue"}">${esc(o.status)}</span>
+      <div class="muted small">Salam ${o.salami_actual}/${o.salami_ordered} kg • Cârnați ${o.sausage_actual}/${o.sausage_ordered} kg</div>
+    </div>`).join(""):"Nu există comenzi.";
+  document.querySelectorAll(".order-row").forEach(el=>el.onclick=()=>selectOrder(el.dataset.order));
+}
 async function load(){
- const r=await fetch(`${SUPABASE_URL}/rest/v1/order_alert_orders?order_number=eq.${ORDER_NUMBER}&select=*`,{headers:H,cache:"no-store"});
- if(!r.ok)throw Error("Supabase "+r.status);
- const rows=await r.json();order=rows[0]||null;
- if(!order)throw Error("Comanda #12548 nu există în Supabase");
- const e=await fetch(`${SUPABASE_URL}/rest/v1/order_alert_events?order_id=eq.${order.id}&select=*&order=created_at.asc`,{headers:H,cache:"no-store"});
- if(!e.ok)throw Error("Supabase events "+e.status);
- events=await e.json();
- render();
-}
-async function patch(v){
- const r=await fetch(`${SUPABASE_URL}/rest/v1/order_alert_orders?id=eq.${order.id}`,{method:"PATCH",headers:H,body:JSON.stringify(v)});
- if(!r.ok)throw Error("Supabase PATCH "+r.status);
-}
-async function event(type,actor,payload={}){
- const r=await fetch(`${SUPABASE_URL}/rest/v1/order_alert_events`,{method:"POST",headers:H,body:JSON.stringify({order_id:order.id,event_type:type,actor_role:actor,payload})});
- if(!r.ok)throw Error("Supabase EVENT "+r.status);
+  if(!session||!profile)return;
+  let path;
+  if(currentOrderNumber){
+    path=`/rest/v1/order_alert_orders?order_number=eq.${encodeURIComponent(currentOrderNumber)}&select=*`;
+  }else{
+    path=`/rest/v1/order_alert_orders?select=*&order=created_at.desc&limit=1`;
+  }
+  const r=await authFetch(path,{cache:"no-store"});
+  if(!r.ok)throw Error(`Supabase ${r.status}`);
+  let rows=await r.json();
+  order=rows[0]||null;
+  if(!order && profile.role!=="manager" && currentOrderNumber){
+    const fallback=await authFetch(`/rest/v1/order_alert_orders?select=*&order=created_at.desc&limit=1`,{cache:"no-store"});
+    if(!fallback.ok)throw Error(`Supabase ${fallback.status}`);
+    rows=await fallback.json();
+    order=rows[0]||null;
+  }
+  if(!order){
+    events=[];
+    render();
+    return;
+  }
+  currentOrderNumber=order.order_number;
+  sessionStorage.setItem("order_alert_order",currentOrderNumber);
+  const e=await authFetch(`/rest/v1/order_alert_events?order_id=eq.${order.id}&select=*&order=created_at.asc`,{cache:"no-store"});
+  if(!e.ok)throw Error(`Supabase events ${e.status}`);
+  events=await e.json();
+  render();
+  if(profile.role==="manager")await loadOrdersForManager();
 }
 function render(){
- if(!order)return;
- const sm=Math.max(0,order.salami_ordered-order.salami_actual),ss=Math.max(0,order.sausage_ordered-order.sausage_actual),diff=sm>0||ss>0;
- $("aSalami").textContent=order.salami_actual+" kg";$("aSausage").textContent=order.sausage_actual+" kg";
- $("aSalamiMissing").textContent=sm+" kg";$("aSausageMissing").textContent=ss+" kg";
- $("agentAlert").textContent=order.warehouse_notified&&!order.agent_seen?1:0;
- $("agentSeen").textContent=order.agent_seen?1:0;$("agentClosed").textContent=order.status==="closed"?1:0;
- $("agentBadge").className="badge "+(order.status==="closed"?"green":order.warehouse_notified?"red":"blue");
- $("agentBadge").textContent=order.status==="closed"?"ÎNCHISĂ":order.warehouse_notified?"ALERTĂ":"AȘTEPTARE";
- $("agentNotice").className=order.status==="closed"?"ok":order.warehouse_notified?"danger":"notice";
- $("agentNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru verificare."):"Se așteaptă finalizarea pickingului de către Depozit.";
- $("warehouseNotice").className=order.status==="closed"?"ok":order.warehouse_notified?(order.agent_seen?"ok":"danger"):"notice";
-$("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru verificare."):"La finalizare, dacă există diferență, Agentul primește automat alerta.";
- $("ackBtn").disabled=!order.warehouse_notified||order.agent_seen||order.status==="closed";
- $("ackBtn").textContent=order.agent_seen?"✓ ALERTĂ VĂZUTĂ":"AM VĂZUT";
- $("agentMsg").textContent=order.agent_seen?"Agentul a confirmat vizualizarea alertei.":"";
- if(!pickingDirty){
-  $("salamiInput").value=order.salami_actual;
-  $("sausageInput").value=order.sausage_actual;
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  $("roleBadge").textContent=profile.role==="manager"?"MANAGER":profile.role==="agent"?"AGENT":"DEPOZIT";
+  $("userLine").textContent=`${profile.display_name} • ${user.email}`;
+  document.querySelectorAll(".orderNumber").forEach(el=>el.textContent=order?`#${order.order_number}`:"—");
+
+  const manager=profile.role==="manager",agent=profile.role==="agent",warehouse=profile.role==="warehouse";
+  $("agentTab").classList.toggle("hidden",!manager&&!agent);
+  $("managerTab").classList.toggle("hidden",!manager);
+  $("warehouseTab").classList.toggle("hidden",!manager&&!warehouse);
+  $("historyTab").classList.toggle("hidden",!manager);
+  if(manager){
+    if(!$("manager").classList.contains("hidden")){}
+  }
+
+  if(!order){
+    ["agent","manager","warehouse","history"].forEach(x=>$(x).classList.add("hidden"));
+    const target=manager?"manager":agent?"agent":"warehouse";
+    $(target).classList.remove("hidden");
+    if(manager)$("managerDetail").innerHTML="<div class=\"notice\">Nu există încă o comandă selectată. Creează una mai jos.</div>";
+    if(agent||warehouse)$(target).innerHTML=`<div class="panel"><div class="notice">Nu există nicio comandă alocată acestui utilizator.</div></div>`;
+    return;
+  }
+
+  const sm=Math.max(0,order.salami_ordered-order.salami_actual),ss=Math.max(0,order.sausage_ordered-order.sausage_actual);
+  $("agentClient").textContent=order.client_name||"Client HoReCa";
+  $("agentName").textContent=profile.role==="manager"?"—":profile.display_name;
+  $("aSalamiOrdered").textContent=order.salami_ordered+" kg";$("aSalami").textContent=order.salami_actual+" kg";$("aSalamiMissing").textContent=sm+" kg";
+  $("aSausageOrdered").textContent=order.sausage_ordered+" kg";$("aSausage").textContent=order.sausage_actual+" kg";$("aSausageMissing").textContent=ss+" kg";
+  $("agentAlert").textContent=order.warehouse_notified&&!order.agent_seen?1:0;
+  $("agentSeen").textContent=order.agent_seen?1:0;$("agentClosed").textContent=order.status==="closed"?1:0;
+  $("agentBadge").className="badge "+(order.status==="closed"?"green":order.warehouse_notified?"red":"blue");
+  $("agentBadge").textContent=order.status==="closed"?"ÎNCHISĂ":order.warehouse_notified?"ALERTĂ":"AȘTEPTARE";
+  $("agentNotice").className=order.status==="closed"?"ok":order.warehouse_notified?(order.agent_seen?"ok":"danger"):"notice";
+  $("agentNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru verificare."):"Se așteaptă finalizarea pickingului de către Depozit.";
+  $("ackBtn").disabled=!order.warehouse_notified||order.agent_seen||order.status==="closed";
+  $("ackBtn").textContent=order.agent_seen?"✓ ALERTĂ VĂZUTĂ":"AM VĂZUT";
+  $("agentMsg").textContent=order.agent_seen?"Agentul a confirmat vizualizarea alertei.":"";
+
+  $("salamiInput").max=order.salami_ordered;$("sausageInput").max=order.sausage_ordered;
+  if(!pickingDirty){$("salamiInput").value=order.salami_actual;$("sausageInput").value=order.sausage_actual;}
+  $("finishPickingBtn").disabled=order.status==="closed";
+  $("warehouseNotice").className=order.status==="closed"?"ok":order.warehouse_notified?(order.agent_seen?"ok":"danger"):"notice";
+  $("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru verificare."):"La finalizare, dacă există diferență, Agentul primește automat alerta.";
+  const canClose=order.warehouse_notified&&order.agent_seen&&order.status!=="closed";
+  $("closeOrderBtn").classList.toggle("hidden",!canClose);$("closeOrderBtn").disabled=!canClose;
+  $("warehouseSeen").innerHTML=order.agent_seen?'<span class="badge green">AGENTUL A VĂZUT ALERTA</span>':'<span class="badge red">Agentul nu a văzut încă alerta.</span>';
+  $("warehouseMsg").textContent=order.status==="closed"?"Comanda este închisă.":order.agent_seen?"Agentul a văzut alerta.":"";
+
+  if(profile.role==="manager"){
+    $("managerDetail").innerHTML=`<b>Comanda #${esc(order.order_number)}</b><br>Client: ${esc(order.client_name||"—")}<br>Status: ${esc(order.status)}<br>Salam: ${order.salami_actual}/${order.salami_ordered} kg<br>Cârnați: ${order.sausage_actual}/${order.sausage_ordered} kg<br>Lipsă totală: ${sm+ss} kg<br>Depozit notificat: ${order.warehouse_notified?"DA":"NU"}<br>Agent a văzut: ${order.agent_seen?"DA":"NU"}<br>Închisă: ${order.status==="closed"?"DA":"NU"}`;
+  }
+  $("historyContent").innerHTML=events.length?events.map(e=>`<div class="event"><b>${esc(e.event_type)}</b><br><span class="muted">${esc(e.actor_role)} • ${new Date(e.created_at).toLocaleString("ro-RO")}</span></div>`).join(""):"Nu există evenimente.";
 }
- $("finishPickingBtn").disabled=order.status!=="picking";
- const canClose=order.warehouse_notified&&order.agent_seen&&order.status!=="closed";
- $("closeOrderBtn").classList.toggle("hidden",!canClose);$("closeOrderBtn").disabled=!canClose;
- $("warehouseSeen").innerHTML=order.agent_seen?'<span class="badge green">AGENTUL A VĂZUT ALERTA</span>':'<span class="badge red">Agentul nu a văzut încă alerta.</span>';
- $("warehouseMsg").textContent=order.status==="closed"?"Comanda este închisă.":order.agent_seen?"Agentul a văzut alerta.":"";
- $("managerDetail").innerHTML=`<b>Comanda #12548</b><br>Status: ${esc(order.status)}<br>Salam: ${order.salami_actual}/${order.salami_ordered} kg<br>Cârnați: ${order.sausage_actual}/${order.sausage_ordered} kg<br>Lipsă totală: ${sm+ss} kg<br>Depozit notificat: ${order.warehouse_notified?"DA":"NU"}<br>Agent a văzut: ${order.agent_seen?"DA":"NU"}<br>Închisă: ${order.status==="closed"?"DA":"NU"}`;
- $("historyContent").innerHTML=events.length?events.map(e=>`<div class="event"><b>${esc(e.event_type)}</b><br><span class="muted">${esc(e.actor_role)} • ${new Date(e.created_at).toLocaleString("ro-RO")}</span></div>`).join(""):"Nu există evenimente.";
+async function rpc(name,body){
+  const r=await authFetch(`/rest/v1/rpc/${name}`,{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
+  const data=await r.json().catch(()=>null);
+  if(!r.ok)throw Error(data?.message||data?.hint||data?.details||`RPC ${name} a eșuat (${r.status})`);
+  return data;
 }
 async function finalize(){
- if(busy||!order||order.status!=="picking")return;busy=true;
- try{
-  const s=Math.max(0,Math.min(10,Number($("salamiInput").value))),u=Math.max(0,Math.min(6,Number($("sausageInput").value)));
-  const diff=s<order.salami_ordered||u<order.sausage_ordered;
-  await patch({salami_actual:s,sausage_actual:u,status:diff?"difference":"resolved",warehouse_notified:diff,agent_seen:false,closed_at:null});
-  await event("picking_finalized","warehouse",{salami_actual:s,sausage_actual:u});
-  if(diff)await event("warehouse_notified","system",{reason:"picking_difference"});
-  pickingDirty=false;
-await load();
- }catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
+  if(busy||!order||order.status==="closed")return;busy=true;
+  try{
+    const s=Number($("salamiInput").value),u=Number($("sausageInput").value);
+    if(!Number.isInteger(s)||!Number.isInteger(u)||s<0||u<0||s>order.salami_ordered||u>order.sausage_ordered)throw Error("Cantități invalide.");
+    await rpc("order_alert_finalize_picking",{p_order_number:order.order_number,p_salami_actual:s,p_sausage_actual:u});
+    pickingDirty=false;await load();
+  }catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
 }
 async function seen(){
- if(busy||!order||!order.warehouse_notified||order.agent_seen||order.status==="closed")return;busy=true;
- try{await patch({agent_seen:true});await event("agent_seen","agent",{});await load()}catch(e){$("agentMsg").textContent=e.message}finally{busy=false}
+  if(busy||!order||!order.warehouse_notified||order.agent_seen||order.status==="closed")return;busy=true;
+  try{await rpc("order_alert_agent_seen",{p_order_number:order.order_number});await load()}catch(e){$("agentMsg").textContent=e.message}finally{busy=false}
 }
-async function close(){
- if(busy||!order||!order.warehouse_notified||!order.agent_seen||order.status==="closed")return;busy=true;
- try{const t=new Date().toISOString();await patch({status:"closed",closed_at:t});await event("order_closed","warehouse",{closed_at:t});await load()}catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
+async function closeOrder(){
+  if(busy||!order||!order.warehouse_notified||!order.agent_seen||order.status==="closed")return;busy=true;
+  try{await rpc("order_alert_close",{p_order_number:order.order_number});await load()}catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
 }
-function show(r){
- role=r;["agent","manager","warehouse","history"].forEach(x=>$(x).classList.toggle("hidden",x!==r));
- ["agentTab","managerTab","warehouseTab","historyTab"].forEach(x=>$(x).classList.toggle("active",x===r+"Tab"));
- render();
+async function createOrder(){
+  if(busy||profile.role!=="manager")return;busy=true;
+  try{
+    const number=$("newOrderNumber").value.trim(),client=$("newClient").value.trim();
+    const salami=Number($("newSalami").value),sausage=Number($("newSausage").value);
+    const agent=$("newAgent").value,warehouse=$("newWarehouse").value,isDemo=$("newIsDemo").checked;
+    if(!number||!client||!Number.isInteger(salami)||!Number.isInteger(sausage))throw Error("Completează datele comenzii.");
+    const created=await rpc("order_alert_manager_create_order",{
+      p_order_number:number,p_client_name:client,p_salami_ordered:salami,p_sausage_ordered:sausage,
+      p_assigned_agent_id:agent,p_assigned_warehouse_id:warehouse,p_is_demo:isDemo
+    });
+    const createdOrder=Array.isArray(created)?created[0]:created;
+    currentOrderNumber=createdOrder.order_number;sessionStorage.setItem("order_alert_order",currentOrderNumber);
+    $("createOrderMsg").textContent=`Comanda #${createdOrder.order_number} a fost creată și alocată.`;
+    $("newOrderNumber").value="";$("newClient").value="";
+    await load();show("manager");
+  }catch(e){$("createOrderMsg").textContent=e.message}finally{busy=false}
 }
-$("agentTab").onclick=()=>show("agent");$("managerTab").onclick=()=>show("manager");$("warehouseTab").onclick=()=>show("warehouse");$("historyTab").onclick=()=>show("history");
+async function changePassword(){
+  const password=$("newPassword").value;
+  if(password.length<6){$("passwordMsg").textContent="Parola trebuie să aibă cel puțin 6 caractere.";return}
+  try{
+    const r=await authFetch("/auth/v1/user",{method:"PUT",headers:authHeaders(),body:JSON.stringify({password})});
+    const data=await r.json().catch(()=>null);
+    if(!r.ok)throw Error(data?.msg||data?.message||"Schimbarea parolei a eșuat.");
+    $("newPassword").value="";$("passwordMsg").textContent="Parola a fost schimbată.";
+  }catch(e){$("passwordMsg").textContent=e.message}
+}
+async function selectOrder(number){
+  currentOrderNumber=number;sessionStorage.setItem("order_alert_order",number);await load();
+  if(profile.role==="manager")show("manager");
+}
+function show(target){
+  ["agent","manager","warehouse","history"].forEach(x=>$(x).classList.toggle("hidden",x!==target));
+  ["agentTab","managerTab","warehouseTab","historyTab"].forEach(x=>$(x).classList.toggle("active",x===target+"Tab"));
+}
+function applyRoleView(){
+  if(profile.role==="manager")show("manager");
+  else if(profile.role==="agent")show("agent");
+  else show("warehouse");
+}
+async function logout(){
+  try{if(session?.access_token)await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:authHeaders()})}catch{}
+  session=null;user=null;profile=null;order=null;events=[];sessionStorage.removeItem("order_alert_session");sessionStorage.removeItem("order_alert_order");
+  $("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("logoutBtn").classList.add("hidden");
+  $("loginMsg").textContent="";$("passwordInput").value="";
+}
+async function start(){
+  const raw=sessionStorage.getItem("order_alert_session");
+  if(!raw)return;
+  try{
+    session=JSON.parse(raw);
+    const r=await authFetch("/auth/v1/user");
+    if(!r.ok)throw Error("Sesiune expirată");
+    user=await r.json();await loadProfile();await loadUsersForManager();await load();applyRoleView();
+  }catch{await logout()}
+}
+$("loginBtn").onclick=async()=>{
+  const email=$("emailInput").value.trim(),password=$("passwordInput").value;
+  $("loginMsg").textContent="";
+  try{await signIn(email,password);const r=await authFetch("/auth/v1/user");if(!r.ok)throw Error("Nu am putut citi utilizatorul autentificat.");user=await r.json();await loadProfile();await loadUsersForManager();currentOrderNumber=sessionStorage.getItem("order_alert_order");await load();applyRoleView();}
+  catch(e){$("loginMsg").textContent=e.message;session=null;sessionStorage.removeItem("order_alert_session")}
+};
+document.querySelectorAll("[data-demo-email]").forEach(b=>b.onclick=()=>{$("emailInput").value=b.dataset.demoEmail;$("passwordInput").focus()});
+$("logoutBtn").onclick=logout;
 $("finishPickingBtn").onclick=finalize;
 $("ackBtn").onclick=seen;
-$("closeOrderBtn").onclick=close;
-
-$("salamiInput").addEventListener("input",()=>{
-  pickingDirty=true;
-});
-
-$("sausageInput").addEventListener("input",()=>{
-  pickingDirty=true;
-});
-load().catch(e=>{$("agentMsg").textContent=e.message;$("warehouseMsg").textContent=e.message});
-setInterval(()=>load().catch(()=>{}),1500);
+$("closeOrderBtn").onclick=closeOrder;
+$("createOrderBtn").onclick=createOrder;
+$("changePasswordBtn").onclick=changePassword;
+$("agentTab").onclick=()=>show("agent");$("managerTab").onclick=()=>show("manager");$("warehouseTab").onclick=()=>show("warehouse");$("historyTab").onclick=()=>show("history");
+$("salamiInput").addEventListener("input",()=>pickingDirty=true);
+$("sausageInput").addEventListener("input",()=>pickingDirty=true);
+start().catch(e=>{$("loginMsg").textContent=e.message});
+setInterval(()=>{if(session&&profile)load().catch(()=>{})},3000);
 </script>
 </body>
 </html>
