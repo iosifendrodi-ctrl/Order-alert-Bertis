@@ -114,9 +114,9 @@ function render(){
  $("agentBadge").className="badge "+(order.status==="closed"?"green":order.warehouse_notified?"red":"blue");
  $("agentBadge").textContent=order.status==="closed"?"ÎNCHISĂ":order.warehouse_notified?"ALERTĂ":"AȘTEPTARE";
  $("agentNotice").className=order.status==="closed"?"ok":order.warehouse_notified?"danger":"notice";
- $("agentNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru reverificare."):"Se așteaptă finalizarea pickingului de către Depozit.";
+ $("agentNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru verificare."):"Se așteaptă finalizarea pickingului de către Depozit.";
  $("warehouseNotice").className=order.status==="closed"?"ok":order.warehouse_notified?(order.agent_seen?"ok":"danger"):"notice";
-$("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru reverificare."):"La finalizare, dacă există diferență, Agentul primește automat alerta.";
+$("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă.":order.warehouse_notified?(order.agent_seen?"Agentul a văzut alerta.":"Depozitul a fost notificat pentru verificare."):"La finalizare, dacă există diferență, Agentul primește automat alerta.";
  $("ackBtn").disabled=!order.warehouse_notified||order.agent_seen||order.status==="closed";
  $("ackBtn").textContent=order.agent_seen?"✓ ALERTĂ VĂZUTĂ":"AM VĂZUT";
  $("agentMsg").textContent=order.agent_seen?"Agentul a confirmat vizualizarea alertei.":"";
