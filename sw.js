@@ -1,360 +1,189 @@
-const CACHE='order-alert-v11-7-shared-state';
+const CACHE='order-alert-v11-8-coherent-flow';
 const ASSETS=['/','/index.html','/manifest.json','/icon-192.png','/icon-512.png','/apple-touch-icon.png'];
-const SYNC_KEY='oa_shared_sync_v1';
-const PATCH='OA_SHARED_STATE_PATCH_V9';
+const KEY='oa_shared_sync_v1';
+const PATCH='OA_SHARED_COHERENT_FLOW_V1';
 
 self.addEventListener('install',event=>{
-  event.waitUntil(
-    caches.open(CACHE)
-      .then(cache=>cache.addAll(ASSETS))
-      .then(()=>self.skipWaiting())
-  );
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
 
 self.addEventListener('activate',event=>{
-  event.waitUntil(
-    caches.keys()
-      .then(keys=>Promise.all(
-        keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))
-      ))
-      .then(()=>self.clients.claim())
-  );
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
 });
 
 async function transformIndex(response){
-
   const html=await response.text();
-
   if(html.includes(PATCH)){
-    return new Response(html,{
-      status:response.status,
-      headers:{
-        'Content-Type':'text/html; charset=utf-8',
-        'Cache-Control':'no-store'
-      }
-    });
+    return new Response(html,{status:response.status,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
   }
-
-  let out=html;
-
-  
-  out=out.replace(
-    "const state = {\n  salami: 6,\n  sausage: 0,\n  stage: 'difference',",
-    `const ${PATCH}=true;
-const OA_SHARED_KEY='${SYNC_KEY}';
-function OA_sharedLoad(){try{return JSON.parse(localStorage.getItem(OA_SHARED_KEY)||'{}')}catch(_){return {}}}
-const OA_shared=OA_sharedLoad();
-const state = {
-  salami:Number.isFinite(Number(OA_shared.salami)) ? Number(OA_shared.salami) : 6,
-  sausage:Number.isFinite(Number(OA_shared.sausage)) ? Number(OA_shared.sausage) : 0,
-  stage:OA_shared.stage || 'difference',`
-  );
-
-  out=out.replace(
-    "  verified: false,\n  resolved: false,\n  closed: false,\n  ack: false,\n  warehouseAcknowledged: false,",
-    `  verified:OA_shared.verified === true,
-  resolved:OA_shared.resolved === true,
-  closed:OA_shared.closed === true,
-  ack:OA_shared.ack === true,
-  warehouseAcknowledged:false,`
-  );
-
   const patch=`
 <script>
-
 (function(){
-
-  const KEY='${SYNC_KEY}';
-
+  const KEY='${KEY}';
+  const PATCH='${PATCH}';
   function read(){
-    try{return JSON.parse(localStorage.getItem(KEY)||'{}')}
-    catch(_){return {}}
+    try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(_){return {}}
   }
-
-  function write(value){
-    try{
-      localStorage.setItem(
-        KEY,
-        JSON.stringify({...read(),...value,updatedAt:Date.now()})
-      );
-    }catch(_){}
+  function write(v){
+    try{localStorage.setItem(KEY,JSON.stringify({...read(),...v,updatedAt:Date.now()}))}catch(_){}
   }
-
-  function visible(id){
-    const el=document.getElementById(id);
-    return !!el && !el.classList.contains('hidden');
+  function shown(id){
+    const e=document.getElementById(id);
+    return !!e&&!e.classList.contains('hidden');
   }
-
   function role(){
-    if(visible('warehouse')) return 'warehouse';
-    if(visible('manager')) return 'manager';
-    if(visible('history')) return 'history';
+    if(shown('warehouse')) return 'warehouse';
+    if(shown('manager')) return 'manager';
+    if(shown('history')) return 'history';
     return 'agent';
   }
-
-  function syncIntoState(){
+  function sync(){
     if(typeof state==='undefined') return;
-
     const s=read();
-
     if(Number.isFinite(Number(s.salami))) state.salami=Number(s.salami);
     if(Number.isFinite(Number(s.sausage))) state.sausage=Number(s.sausage);
-    if(s.stage) state.stage=s.stage;
-
+    if(typeof s.stage==='string') state.stage=s.stage;
     state.verified=s.verified===true;
     state.ack=s.ack===true;
     state.resolved=s.resolved===true;
     state.closed=s.closed===true;
-    state.warehouseAcknowledged=false;
-
-    if(s.resolutionReason!==undefined) state.resolutionReason=s.resolutionReason;
-    if(s.resolutionNote!==undefined) state.resolutionNote=s.resolutionNote;
-    if(s.closedBy!==undefined) state.closedBy=s.closedBy;
-    if(s.closeNote!==undefined) state.closeNote=s.closeNote;
   }
-
-  function hideAgentVerificationAndClosure(){
+  function hideAgentControls(){
     if(role()!=='agent') return;
-
-    const verifyBtn=document.getElementById('verifyBtn');
-    if(verifyBtn) verifyBtn.remove();
-
+    ['verifyBtn','resolveBtn','closeOrderBtn'].forEach(id=>{
+      const e=document.getElementById(id);
+      if(e) e.classList.add('hidden');
+    });
     const stage=document.getElementById('stage');
     if(stage){
-      [...stage.options].forEach(option=>{
-        if(
-          option.value==='verification' ||
-          option.value==='resolved' ||
-          option.textContent.trim()==='Verificare solicitată' ||
-          option.textContent.trim()==='Rezolvată'
-        ){
-          option.remove();
-        }
+      [...stage.options].forEach(o=>{
+        if(o.value==='verification'||o.value==='resolved'||o.textContent.trim()==='Verificare solicitată'||o.textContent.trim()==='Rezolvată') o.remove();
       });
-      if(stage.value==='verification' || stage.value==='resolved') stage.value='difference';
+      stage.value='difference';
+      stage.disabled=state.closed;
     }
-
-    const resolutionPanel=document.getElementById('resolutionPanel');
-    if(resolutionPanel) resolutionPanel.classList.add('hidden');
-
-    const closePanel=document.getElementById('closePanel');
-    if(closePanel) closePanel.classList.add('hidden');
   }
-
   function renderAgent(){
     if(role()!=='agent') return;
-
-    syncIntoState();
-    hideAgentVerificationAndClosure();
-
+    sync();
+    if(state.stage==='difference'&&!state.closed&&!state.verified){
+      state.verified=true;
+      state.ack=false;
+      write({stage:'difference',verified:true,ack:false,resolved:false,closed:false});
+    }
+    hideAgentControls();
     if(typeof render==='function') render();
-
-    hideAgentVerificationAndClosure();
-
+    hideAgentControls();
     const msg=document.getElementById('agentMsg');
     if(!msg) return;
-
     if(state.closed){
       msg.textContent='Comanda a fost închisă și mutată în Istoric.';
-      msg.style.fontWeight='800';
-      return;
-    }
-
-    if(state.ack){
-      msg.textContent='Alerta a fost văzută de agent.';
-      msg.style.fontWeight='800';
-      return;
-    }
-
-    if(state.verified){
+    }else if(state.ack){
+      msg.textContent='Alerta a fost confirmată de agent.';
+    }else if(state.verified){
       msg.textContent='Depozitul a fost notificat pentru reverificare.';
-      msg.style.fontWeight='800';
     }
+    msg.style.fontWeight='800';
   }
-
-  function ensureWarehouseControls(){
+  function hideWarehouseVerification(){
+    if(role()!=='warehouse') return;
+    const notice=document.getElementById('warehouseVerificationNotice');
+    if(notice) notice.classList.add('hidden');
+    const ack=document.getElementById('warehouseAcknowledgeBtn');
+    if(ack) ack.remove();
+  }
+  function warehousePanel(){
     if(role()!=='warehouse') return null;
-
-    let panel=document.getElementById('oaWarehouseClosePanel');
-
-    if(!panel){
-      panel=document.createElement('div');
-      panel.id='oaWarehouseClosePanel';
-      panel.className='panel';
-      panel.style.marginTop='12px';
-      panel.innerHTML=[
-        '<h3 style="margin-top:0">Finalizare comandă</h3>',
-        '<div id="oaWarehouseCloseStatus" class="muted" style="margin-bottom:8px">Așteaptă ca agentul să vadă alerta.</div>',
-        '<select class="select" id="oaWarehouseResolutionReason">',
-          '<option>Stoc insuficient</option>',
-          '<option>Produs indisponibil</option>',
-          '<option>Eroare picking</option>',
-          '<option>Produs deteriorat</option>',
-          '<option>Înlocuire produs</option>',
-          '<option>Eroare scanare</option>',
-          '<option>Alt motiv</option>',
-        '</select>',
-        '<input class="select" id="oaWarehouseResolutionNote" style="margin-top:8px" placeholder="Observații / rezoluție">',
-        '<input class="select" id="oaWarehouseClosedBy" style="margin-top:8px" value="Depozit" placeholder="Închisă de">',
-        '<button class="btn redbtn" id="oaWarehouseCloseBtn" type="button" disabled>ÎNCHIDE COMANDA</button>'
-      ].join('');
-
-      const msg=document.getElementById('warehouseMsg');
-      if(msg && msg.parentNode) msg.parentNode.appendChild(panel);
-      else {
-        const warehouse=document.getElementById('warehouse');
-        if(warehouse) warehouse.appendChild(panel);
-      }
-
-      const btn=document.getElementById('oaWarehouseCloseBtn');
-      if(btn){
-        btn.addEventListener('click',warehouseCloseOrder);
-      }
+    let p=document.getElementById('oaWarehouseFlow');
+    if(!p){
+      p=document.createElement('div');
+      p.id='oaWarehouseFlow';
+      p.className='panel';
+      p.innerHTML='<h2>Stare comandă</h2><div id="oaWarehouseFlowMsg" class="muted"></div><input id="oaWarehouseReason" class="select" style="margin-top:8px" value="Stoc insuficient" placeholder="Motiv rezolvare"><input id="oaWarehouseNote" class="select" style="margin-top:8px" placeholder="Observații"><input id="oaWarehouseClosedBy" class="select" style="margin-top:8px" value="Depozit" placeholder="Închisă de"><button id="oaWarehouseClose" class="btn redbtn" type="button">ÎNCHIDE COMANDA</button>';
+      const w=document.getElementById('warehouse');
+      if(w) w.appendChild(p);
+      const b=document.getElementById('oaWarehouseClose');
+      if(b) b.addEventListener('click',closeFromWarehouse);
     }
-
-    return panel;
+    return p;
   }
-
   function renderWarehouse(){
     if(role()!=='warehouse') return;
-
-    syncIntoState();
-
-    const oldNotice=document.getElementById('warehouseVerificationNotice');
-    if(oldNotice) oldNotice.classList.add('hidden');
-
-    const oldAck=document.getElementById('warehouseAcknowledgeBtn');
-    if(oldAck) oldAck.remove();
-
-    const panel=ensureWarehouseControls();
-    const status=document.getElementById('oaWarehouseCloseStatus');
-    const btn=document.getElementById('oaWarehouseCloseBtn');
-
-    if(panel && status && btn){
-      if(state.closed){
-        status.textContent='Comanda este închisă.';
-        btn.disabled=true;
-        btn.textContent='✓ COMANDĂ ÎNCHISĂ';
-      }else if(state.ack){
-        status.textContent='Agentul a văzut alerta. Depozitul poate închide comanda.';
-        btn.disabled=false;
-        btn.textContent='ÎNCHIDE COMANDA';
-      }else if(state.verified){
-        status.textContent='Depozitul a fost notificat. Așteaptă ca agentul să vadă alerta.';
-        btn.disabled=true;
-        btn.textContent='AȘTEAPTĂ AGENTUL';
-      }else{
-        status.textContent='Nu există încă o diferență notificată.';
-        btn.disabled=true;
-        btn.textContent='ÎNCHIDE COMANDA';
-      }
-    }
-
-    const warehouseMsg=document.getElementById('warehouseMsg');
-    if(warehouseMsg){
-      if(state.closed){
-        warehouseMsg.textContent='Comanda a fost închisă.';
-      }else if(state.ack){
-        warehouseMsg.textContent='Agentul a văzut alerta. Depozitul poate închide comanda.';
-      }else if(state.verified){
-        warehouseMsg.textContent='Agentul a fost notificat. Așteaptă ca agentul să vadă alerta.';
-      }
+    sync();
+    hideWarehouseVerification();
+    const finish=document.getElementById('finishPickingBtn');
+    const complete=document.getElementById('completeAllBtn');
+    if(finish) finish.disabled=state.closed;
+    if(complete) complete.disabled=state.closed;
+    const p=warehousePanel();
+    const msg=document.getElementById('oaWarehouseFlowMsg');
+    const b=document.getElementById('oaWarehouseClose');
+    if(!p||!msg||!b) return;
+    if(state.closed){
+      msg.textContent='Comanda este închisă.';
+      b.disabled=true;
+    }else if(state.verified&&!state.ack){
+      msg.textContent='Depozitul a fost notificat. Așteaptă ca agentul să vadă alerta.';
+      b.disabled=true;
+    }else if(state.verified&&state.ack){
+      msg.textContent='Agentul a văzut alerta. Depozitul poate închide comanda.';
+      b.disabled=false;
+    }else{
+      msg.textContent='Așteaptă finalizarea picking-ului.';
+      b.disabled=true;
     }
   }
-
-  function persistWarehousePicking(){
-    if(role()!=='warehouse') return;
-
-    const salami=Number(document.getElementById('salamiInput')?.value ?? state.salami ?? 6);
-    const sausage=Number(document.getElementById('sausageInput')?.value ?? state.sausage ?? 0);
-
-    if(!Number.isFinite(salami) || !Number.isFinite(sausage)) return;
-
-    const diff=salami<10 || sausage<6;
-    const old=read();
-
-    write({
-      salami,
-      sausage,
-      stage:diff?'difference':'resolved',
-      verified:diff,
-      ack:diff ? false : old.ack===true,
-      resolved:false,
-      closed:false
-    });
-
-    syncIntoState();
+  function warehouseFinish(){
+    if(role()!=='warehouse'||typeof state==='undefined'||state.closed) return;
+    const salami=Math.max(0,Math.min(10,Number(document.getElementById('salamiInput')?.value)||0));
+    const sausage=Math.max(0,Math.min(6,Number(document.getElementById('sausageInput')?.value)||0));
+    const difference=salami!==10||sausage!==6;
+    state.salami=salami;
+    state.sausage=sausage;
+    state.stage=difference?'difference':'resolved';
+    state.verified=difference;
+    state.ack=false;
+    state.resolved=false;
+    state.closed=false;
+    write({salami,sausage,stage:state.stage,verified:difference,ack:false,resolved:false,closed:false});
+    if(typeof render==='function') render();
     renderWarehouse();
   }
-
-  function persistAgentAck(){
-    if(role()!=='agent') return;
-
-    setTimeout(()=>{
-      syncIntoState();
-      if(!state.verified || state.closed) return;
-
-      state.ack=true;
-      write({
-        ack:true,
-        verified:true
-      });
-
-      renderAgent();
-    },80);
+  function agentAck(){
+    if(role()!=='agent'||typeof state==='undefined'||state.closed||!state.verified) return;
+    state.ack=true;
+    write({ack:true,verified:true});
+    const msg=document.getElementById('agentMsg');
+    if(msg) msg.textContent='Alerta a fost confirmată de agent.';
+    if(typeof addEvent==='function') addEvent('Agent a văzut alerta');
+    if(typeof render==='function') render();
+    hideAgentControls();
   }
-
-  function warehouseCloseOrder(){
-    if(role()!=='warehouse') return;
-
-    syncIntoState();
-
-    if(!state.verified || !state.ack || state.closed) return;
-
-    const reason=document.getElementById('oaWarehouseResolutionReason')?.value || 'Stoc insuficient';
-    const note=document.getElementById('oaWarehouseResolutionNote')?.value.trim() || '';
-    const closedBy=document.getElementById('oaWarehouseClosedBy')?.value.trim() || 'Depozit';
-
-    
-    const originalReason=document.getElementById('resolutionReason');
-    const originalNote=document.getElementById('resolutionNote');
-    const originalClosedBy=document.getElementById('closedBy');
-    const originalCloseNote=document.getElementById('closeNote');
-
-    if(originalReason) originalReason.value=reason;
-    if(originalNote) originalNote.value=note;
-    if(originalClosedBy) originalClosedBy.value=closedBy;
-    if(originalCloseNote) originalCloseNote.value=note;
-
-    state.verified=true;
-    state.resolved=false;
-
-    if(typeof resolveVerification==='function'){
-      resolveVerification();
-    }else{
-      state.resolved=true;
-      state.resolutionReason=reason;
-      state.resolutionNote=note;
-      state.stage='resolved';
-    }
-
-    if(!state.resolved) return;
-
-    if(typeof closeOrder==='function'){
-      closeOrder();
-    }else{
-      state.closed=true;
-      state.closedBy=closedBy;
-      state.closeNote=note;
-      state.stage='closed';
-    }
-
+  function closeFromWarehouse(){
+    if(role()!=='warehouse'||typeof state==='undefined') return;
+    sync();
+    if(state.closed||!state.verified||!state.ack) return;
+    const reason=document.getElementById('oaWarehouseReason')?.value.trim()||'Stoc insuficient';
+    const note=document.getElementById('oaWarehouseNote')?.value.trim()||'';
+    const closedBy=document.getElementById('oaWarehouseClosedBy')?.value.trim()||'Depozit';
+    const rr=document.getElementById('resolutionReason');
+    const rn=document.getElementById('resolutionNote');
+    const cb=document.getElementById('closedBy');
+    const cn=document.getElementById('closeNote');
+    if(rr) rr.value=reason;
+    if(rn) rn.value=note;
+    if(cb) cb.value=closedBy;
+    if(cn) cn.value=note;
+    if(typeof resolveVerification==='function') resolveVerification();
+    if(typeof state!=='undefined'&&!state.resolved) return;
+    if(typeof closeOrder==='function') closeOrder();
+    sync();
     write({
       salami:state.salami,
       sausage:state.sausage,
-      stage:state.closed?'closed':'resolved',
-      verified:true,
-      ack:true,
+      stage:state.stage,
+      verified:state.verified===true,
+      ack:state.ack===true,
       resolved:state.resolved===true,
       closed:state.closed===true,
       resolutionReason:state.resolutionReason,
@@ -362,81 +191,63 @@ const state = {
       closedBy:state.closedBy,
       closeNote:state.closeNote
     });
-
     renderWarehouse();
   }
-
+  function intercept(id,fn){
+    const e=document.getElementById(id);
+    if(!e||e.dataset[PATCH]) return;
+    e.dataset[PATCH]='1';
+    e.addEventListener('click',ev=>{
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      fn();
+    },true);
+  }
   function install(){
-
-    const ackBtn=document.getElementById('ackBtn');
-    if(ackBtn) ackBtn.addEventListener('click',persistAgentAck);
-
-    ['finishPickingBtn','completeAllBtn'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.addEventListener('click',()=>setTimeout(persistWarehousePicking,120));
+    intercept('finishPickingBtn',warehouseFinish);
+    intercept('completeAllBtn',function(){
+      if(role()!=='warehouse'||typeof state==='undefined'||state.closed) return;
+      const a=document.getElementById('salamiInput');
+      const b=document.getElementById('sausageInput');
+      if(a) a.value='10';
+      if(b) b.value='6';
+      warehouseFinish();
     });
-
-    
-    const oldAck=document.getElementById('warehouseAcknowledgeBtn');
-    if(oldAck) oldAck.remove();
-
-    if(role()==='agent') renderAgent();
-    if(role()==='warehouse') renderWarehouse();
-
+    intercept('ackBtn',agentAck);
+    const old=document.getElementById('warehouseAcknowledgeBtn');
+    if(old) old.remove();
+    renderAgent();
+    renderWarehouse();
     setInterval(()=>{
       if(role()==='agent') renderAgent();
       if(role()==='warehouse') renderWarehouse();
-    },500);
+    },300);
   }
-
-  window.addEventListener('storage',event=>{
-    if(event.key!==KEY) return;
+  window.addEventListener('storage',e=>{
+    if(e.key!==KEY) return;
     if(role()==='agent') renderAgent();
     if(role()==='warehouse') renderWarehouse();
   });
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',install);
-  }else{
-    install();
-  }
-
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install); else install();
 })();
 </script>`;
-
-  out=out.replace('</body></html>',patch+'\n</body></html>');
-
-  return new Response(out,{
-    status:response.status,
-    headers:{
-      'Content-Type':'text/html; charset=utf-8',
-      'Cache-Control':'no-store'
-    }
-  });
+  const out=html.replace('</body></html>',patch+'\\n</body></html>');
+  return new Response(out,{status:response.status,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
 }
 
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
-
   const url=new URL(event.request.url);
-  const isIndex=url.pathname==='/' || url.pathname==='/index.html';
-
+  const isIndex=url.pathname==='/'||url.pathname==='/index.html';
   event.respondWith((async()=>{
     try{
       const response=await fetch(event.request,{cache:'no-store'});
-
-      if(isIndex && response.ok){
-        return transformIndex(response);
-      }
-
+      if(isIndex&&response.ok) return transformIndex(response);
       const copy=response.clone();
-      caches.open(CACHE).then(cache=>cache.put(event.request,copy));
+      caches.open(CACHE).then(c=>c.put(event.request,copy));
       return response;
-
     }catch(_){
-      return caches.match(event.request).then(
-        cached=>cached || caches.match('/index.html')
-      );
+      return caches.match(event.request).then(r=>r||caches.match('/index.html'));
     }
   })());
 });
