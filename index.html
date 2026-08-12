@@ -121,7 +121,7 @@ $("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă
  $("ackBtn").textContent=order.agent_seen?"✓ ALERTĂ VĂZUTĂ":"AM VĂZUT";
  $("agentMsg").textContent=order.agent_seen?"Agentul a confirmat vizualizarea alertei.":"";
  $("salamiInput").value=order.salami_actual;$("sausageInput").value=order.sausage_actual;
- $("finishPickingBtn").disabled=order.status==="closed";
+ $("finishPickingBtn").disabled=order.status!=="picking";
  const canClose=order.warehouse_notified&&order.agent_seen&&order.status!=="closed";
  $("closeOrderBtn").classList.toggle("hidden",!canClose);$("closeOrderBtn").disabled=!canClose;
  $("warehouseSeen").innerHTML=order.agent_seen?'<span class="badge green">AGENTUL A VĂZUT ALERTA</span>':'<span class="badge red">Agentul nu a văzut încă alerta.</span>';
@@ -130,7 +130,7 @@ $("warehouseNotice").textContent=order.status==="closed"?"Comanda este închisă
  $("historyContent").innerHTML=events.length?events.map(e=>`<div class="event"><b>${esc(e.event_type)}</b><br><span class="muted">${esc(e.actor_role)} • ${new Date(e.created_at).toLocaleString("ro-RO")}</span></div>`).join(""):"Nu există evenimente.";
 }
 async function finalize(){
- if(busy||!order||order.status==="closed")return;busy=true;
+ if(busy||!order||order.status!=="picking")return;busy=true;
  try{
   const s=Math.max(0,Math.min(10,Number($("salamiInput").value))),u=Math.max(0,Math.min(6,Number($("sausageInput").value)));
   const diff=s<order.salami_ordered||u<order.sausage_ordered;
