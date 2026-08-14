@@ -105,8 +105,8 @@ body{margin:0;background:var(--p);color:var(--i);font-family:-apple-system,Blink
       <div class="form-grid">
         <div class="full"><label class="muted">Număr comandă</label><input id="newOrderNumber" class="input" placeholder="ex. 12600"></div>
         <div class="full"><label class="muted">Client</label><input id="newClient" class="input" placeholder="Client HoReCa"></div>
-        <div><label class="muted">Salam comandat (kg)</label><input id="newSalami" class="input" type="number" min="0" step="1" value="10"></div>
-        <div><label class="muted">Cârnați comandați (kg)</label><input id="newSausage" class="input" type="number" min="0" step="1" value="6"></div>
+        <div><label class="muted">Salam comandat (kg)</label><input id="newSalami" class="input" type="number" min="0" step="0.01" value="10"></div>
+        <div><label class="muted">Cârnați comandați (kg)</label><input id="newSausage" class="input" type="number" min="0" step="0.01" value="6"></div>
         <div><label class="muted">Agent</label><select id="newAgent" class="input"></select></div>
         <div><label class="muted">Depozit</label><select id="newWarehouse" class="input"></select></div>
         <div class="full"><label><input id="newIsDemo" type="checkbox" checked> Comandă demo</label></div>
@@ -126,8 +126,8 @@ body{margin:0;background:var(--p);color:var(--i);font-family:-apple-system,Blink
       <h2>Comanda <span class="orderNumber"></span></h2>
       <div class="muted">Depozit • cantități pregătite</div>
       <div class="qty" style="margin-top:12px">
-        <div><label class="muted">Salam pregătit (kg)</label><input class="input" id="salamiInput" type="number" min="0" step="1" value="0"></div>
-        <div><label class="muted">Cârnați pregătiți (kg)</label><input class="input" id="sausageInput" type="number" min="0" step="1" value="0"></div>
+        <div><label class="muted">Salam pregătit (kg)</label><input class="input" id="salamiInput" type="number" min="0" step="0.01" value="0"></div>
+        <div><label class="muted">Cârnați pregătiți (kg)</label><input class="input" id="sausageInput" type="number" min="0" step="0.01" value="0"></div>
       </div>
       <button class="btn" id="finishPickingBtn" type="button">FINALIZEAZĂ PICKING</button>
       <div id="warehouseNotice" class="notice" style="margin-top:12px"></div>
@@ -306,7 +306,7 @@ async function finalize(){
   if(busy||!order||order.status==="closed")return;busy=true;
   try{
     const s=Number($("salamiInput").value),u=Number($("sausageInput").value);
-    if(!Number.isInteger(s)||!Number.isInteger(u)||s<0||u<0)throw Error("Cantități invalide.");
+    if(!Number.isFinite(s)||!Number.isFinite(u)||s<0||u<0)throw Error("Cantități invalide.");
     await rpc("order_alert_finalize_picking",{p_order_number:order.order_number,p_salami_actual:s,p_sausage_actual:u});
     pickingDirty=false;await load();
   }catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
