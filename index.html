@@ -282,7 +282,6 @@ function render(){
   $("ackBtn").textContent=order.agent_seen?"✓ ALERTĂ VĂZUTĂ":"AM VĂZUT";
   $("agentMsg").textContent=order.agent_seen?"Agentul a confirmat vizualizarea alertei.":"";
 
-  $("salamiInput").max=order.salami_ordered;$("sausageInput").max=order.sausage_ordered;
   if(!pickingDirty){$("salamiInput").value=order.salami_actual;$("sausageInput").value=order.sausage_actual;}
   $("finishPickingBtn").disabled=order.status==="closed";
   $("warehouseNotice").className=order.status==="closed"?"ok":order.warehouse_notified?(order.agent_seen?"ok":"danger"):"notice";
@@ -307,7 +306,7 @@ async function finalize(){
   if(busy||!order||order.status==="closed")return;busy=true;
   try{
     const s=Number($("salamiInput").value),u=Number($("sausageInput").value);
-    if(!Number.isInteger(s)||!Number.isInteger(u)||s<0||u<0||s>order.salami_ordered||u>order.sausage_ordered)throw Error("Cantități invalide.");
+    if(!Number.isInteger(s)||!Number.isInteger(u)||s<0||u<0)throw Error("Cantități invalide.");
     await rpc("order_alert_finalize_picking",{p_order_number:order.order_number,p_salami_actual:s,p_sausage_actual:u});
     pickingDirty=false;await load();
   }catch(e){$("warehouseMsg").textContent=e.message}finally{busy=false}
