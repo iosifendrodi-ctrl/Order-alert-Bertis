@@ -268,10 +268,11 @@ function render(){
   }
 
   const sm=Math.max(0,order.salami_ordered-order.salami_actual),ss=Math.max(0,order.sausage_ordered-order.sausage_actual);
+  const fmtKg=v=>`${Number(v??0).toFixed(2).replace('.',',')} kg`;
   $("agentClient").textContent=order.client_name||"Client HoReCa";
   $("agentName").textContent=profile.role==="manager"?"—":profile.display_name;
-  $("aSalamiOrdered").textContent=order.salami_ordered+" kg";$("aSalami").textContent=order.salami_actual+" kg";$("aSalamiMissing").textContent=sm+" kg";
-  $("aSausageOrdered").textContent=order.sausage_ordered+" kg";$("aSausage").textContent=order.sausage_actual+" kg";$("aSausageMissing").textContent=ss+" kg";
+  $("aSalamiOrdered").textContent=fmtKg(order.salami_ordered);$("aSalami").textContent=fmtKg(order.salami_actual);$("aSalamiMissing").textContent=fmtKg(sm);
+  $("aSausageOrdered").textContent=fmtKg(order.sausage_ordered);$("aSausage").textContent=fmtKg(order.sausage_actual);$("aSausageMissing").textContent=fmtKg(ss);
   $("agentAlert").textContent=order.warehouse_notified&&!order.agent_seen?1:0;
   $("agentSeen").textContent=order.agent_seen?1:0;$("agentClosed").textContent=order.status==="closed"?1:0;
   $("agentBadge").className="badge "+(order.status==="closed"?"green":order.warehouse_notified?"red":"blue");
@@ -292,7 +293,7 @@ function render(){
   $("warehouseMsg").textContent=order.status==="closed"?"Comanda este închisă.":order.agent_seen?"Agentul a văzut alerta.":"";
 
   if(profile.role==="manager"){
-    $("managerDetail").innerHTML=`<b>Comanda #${esc(order.order_number)}</b><br>Client: ${esc(order.client_name||"—")}<br>Status: ${esc(order.status)}<br>Salam: ${order.salami_actual}/${order.salami_ordered} kg<br>Cârnați: ${order.sausage_actual}/${order.sausage_ordered} kg<br>Lipsă totală: ${sm+ss} kg<br>Depozit notificat: ${order.warehouse_notified?"DA":"NU"}<br>Agent a văzut: ${order.agent_seen?"DA":"NU"}<br>Închisă: ${order.status==="closed"?"DA":"NU"}`;
+    $("managerDetail").innerHTML=`<b>Comanda #${esc(order.order_number)}</b><br>Client: ${esc(order.client_name||"—")}<br>Status: ${esc(order.status)}<br>Salam: ${fmtKg(order.salami_actual)}/${fmtKg(order.salami_ordered)}<br>Cârnați: ${fmtKg(order.sausage_actual)}/${fmtKg(order.sausage_ordered)}<br>Lipsă totală: ${fmtKg(sm+ss)}<br>Depozit notificat: ${order.warehouse_notified?"DA":"NU"}<br>Agent a văzut: ${order.agent_seen?"DA":"NU"}<br>Închisă: ${order.status==="closed"?"DA":"NU"}`;
   }
   $("historyContent").innerHTML=events.length?events.map(e=>`<div class="event"><b>${esc(e.event_type)}</b><br><span class="muted">${esc(e.actor_role)} • ${new Date(e.created_at).toLocaleString("ro-RO")}</span></div>`).join(""):"Nu există evenimente.";
 }
