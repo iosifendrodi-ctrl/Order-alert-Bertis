@@ -101,12 +101,29 @@ body{margin:0;background:var(--p);color:var(--i);font-family:-apple-system,Blink
       <div id="managerDetail"></div>
     </div>
     <div class="panel">
+      <h3>Catalog produse</h3>
+      <p class="muted">Produsele active pot fi încărcate prin CSV: <code>cod,nume,activ</code>. Exemplu: <code>B001,Salam Premium,true</code></p>
+      <textarea id="productImport" class="input" rows="5" placeholder="cod,nume,activ&#10;B001,Salam Premium,true&#10;C001,Cârnați Tradiționali,true"></textarea>
+      <button id="importProductsBtn" class="btn light" type="button">IMPORTĂ PRODUSE</button>
+      <div id="productImportMsg" class="muted" style="margin-top:9px"></div>
+      <div style="margin-top:12px">
+        <label class="muted">Produs pentru comandă</label>
+        <select id="orderProductSelect" class="input"></select>
+      </div>
+      <div class="qty" style="margin-top:10px">
+        <div><label class="muted">Cantitate comandată (kg)</label><input id="orderProductQty" class="input" type="number" min="0" step="0.01" value="0"></div>
+        <div style="display:flex;align-items:end"><button id="addOrderProductBtn" class="btn light" type="button">ADAUGĂ PRODUS</button></div>
+      </div>
+      <div id="selectedOrderProducts" style="margin-top:12px"></div>
+    </div>
+
+    <div class="panel">
       <h3>Creează comandă</h3>
       <div class="form-grid">
-        <div class="full"><label class="muted">Număr comandă</label><input id="newOrderNumber" class="input" placeholder="ex. 12600"></div>
+        <div class="full"><label class="muted">Număr comandă</label><input id="newOrderNumber" class="input" placeholder="ex. 12603"></div>
         <div class="full"><label class="muted">Client</label><input id="newClient" class="input" placeholder="Client HoReCa"></div>
-        <div><label class="muted">Salam comandat (kg)</label><input id="newSalami" class="input" type="number" min="0" step="0.01" value="10"></div>
-        <div><label class="muted">Cârnați comandați (kg)</label><input id="newSausage" class="input" type="number" min="0" step="0.01" value="6"></div>
+        <div><label class="muted">Salam comandat (kg) — flux existent</label><input id="newSalami" class="input" type="number" min="0" step="0.01" value="0"></div>
+        <div><label class="muted">Cârnați comandați (kg) — flux existent</label><input id="newSausage" class="input" type="number" min="0" step="0.01" value="0"></div>
         <div><label class="muted">Agent</label><select id="newAgent" class="input"></select></div>
         <div><label class="muted">Depozit</label><select id="newWarehouse" class="input"></select></div>
         <div class="full"><label><input id="newIsDemo" type="checkbox" checked> Comandă demo</label></div>
@@ -161,7 +178,7 @@ const ROLE_EMAILS={
   agent:"iosif.endrodi+agent@gmail.com",
   warehouse:"iosif.endrodi+depozit@gmail.com"
 };
-let session=null,user=null,profile=null,order=null,events=[],currentOrderNumber=sessionStorage.getItem("order_alert_order")||null,busy=false,pickingDirty=false;
+let session=null,user=null,profile=null,order=null,events=[],products=[],selectedOrderProducts=[],currentOrderNumber=sessionStorage.getItem("order_alert_order")||null,busy=false,pickingDirty=false;
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 
@@ -196,6 +213,68 @@ async function loadUsersForManager(){
   const warehouses=rows.filter(x=>x.role==="warehouse"&&x.active);
   $("newAgent").innerHTML=agents.map(x=>`<option value="${esc(x.user_id)}">${esc(x.display_name)}</option>`).join("");
   $("newWarehouse").innerHTML=warehouses.map(x=>`<option value="${esc(x.user_id)}">${esc(x.display_name)}</option>`).join("");
+}
+
+async function loadProducts(){
+  if(profile.role!=="manager")return;
+  const r=await authFetch(`/rest/v1/order_alert_products?active=eq.true&select=id,code,name,active&order=name.asc`);
+  if(!r.ok)throw Error("Nu am putut încărca catalogul de produse.");
+  products=await r.json();
+  $("orderProductSelect").innerHTML=products.length
+    ? products.map(p=>`<option value="${esc(p.id)}">${esc(p.code)} — ${esc(p.name)}</option>`).join("")
+    : `<option value="">Nu există produse active</option>`;
+  renderSelectedOrderProducts();
+}
+function renderSelectedOrderProducts(){
+  $("selectedOrderProducts").innerHTML=selectedOrderProducts.length
+    ? selectedOrderProducts.map((x,i)=>`
+      <div class="line">
+        <b>${esc(x.code)} — ${esc(x.name)}</b>
+        <span class="muted"> ${Number(x.qty).toFixed(2).replace(".",",")} kg</span>
+        <button class="btn light" type="button" data-remove-product="${i}" style="width:auto;float:right;margin:0;padding:6px 9px">ȘTERGE</button>
+      </div>`).join("")
+    : `<div class="muted">Nu ai adăugat încă produse în selecție.</div>`;
+  document.querySelectorAll("[data-remove-product]").forEach(btn=>{
+    btn.onclick=()=>{
+      selectedOrderProducts.splice(Number(btn.dataset.removeProduct),1);
+      renderSelectedOrderProducts();
+    };
+  });
+}
+function addSelectedProduct(){
+  const id=$("orderProductSelect").value;
+  const qty=Number($("orderProductQty").value);
+  const product=products.find(p=>p.id===id);
+  if(!product)throw Error("Selectează un produs activ.");
+  if(!Number.isFinite(qty)||qty<0)throw Error("Cantitatea trebuie să fie un număr valid.");
+  const existing=selectedOrderProducts.find(x=>x.id===id);
+  if(existing)existing.qty=Number((existing.qty+qty).toFixed(2));
+  else selectedOrderProducts.push({id,code:product.code,name:product.name,qty:Number(qty.toFixed(2))});
+  $("orderProductQty").value="0";
+  renderSelectedOrderProducts();
+}
+async function importProducts(){
+  if(busy||profile.role!=="manager")return;
+  const raw=$("productImport").value.trim();
+  if(!raw)throw Error("Introdu lista de produse.");
+  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const rows=[];
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    if(i===0&&/^cod\s*,\s*nume\s*,\s*activ$/i.test(line))continue;
+    const parts=line.split(",").map(x=>x.trim());
+    if(parts.length<2||!parts[0]||!parts[1])throw Error(`Linia ${i+1} nu are formatul cod,nume,activ.`);
+    const active=parts.length>=3&&parts[2]!==""?["true","1","da","yes"].includes(parts[2].toLowerCase()):true;
+    rows.push({code:parts[0],name:parts[1],active});
+  }
+  if(!rows.length)throw Error("Lista nu conține produse.");
+  busy=true;
+  try{
+    const affected=await rpc("order_alert_manager_upsert_products",{p_products:rows});
+    $("productImportMsg").textContent=`Produse procesate: ${affected}.`;
+    $("productImport").value="";
+    await loadProducts();
+  }finally{busy=false}
 }
 async function loadOrdersForManager(){
   if(profile.role!=="manager")return;
@@ -239,7 +318,7 @@ async function load(){
   if(!e.ok)throw Error(`Supabase events ${e.status}`);
   events=await e.json();
   render();
-  if(profile.role==="manager")await loadOrdersForManager();
+  if(profile.role==="manager"){await loadProducts();await loadOrdersForManager();}
 }
 function render(){
   $("loginView").classList.add("hidden");
@@ -332,9 +411,17 @@ async function createOrder(){
       p_assigned_agent_id:agent,p_assigned_warehouse_id:warehouse,p_is_demo:isDemo
     });
     const createdOrder=Array.isArray(created)?created[0]:created;
+    if(selectedOrderProducts.length){
+      for(const item of selectedOrderProducts){
+        await rpc("order_alert_manager_add_order_item",{
+          p_order_number:createdOrder.order_number,p_product_id:item.id,p_ordered_qty:item.qty
+        });
+      }
+    }
     currentOrderNumber=createdOrder.order_number;sessionStorage.setItem("order_alert_order",currentOrderNumber);
-    $("createOrderMsg").textContent=`Comanda #${createdOrder.order_number} a fost creată și alocată.`;
+    $("createOrderMsg").textContent=`Comanda #${createdOrder.order_number} a fost creată${selectedOrderProducts.length?" cu "+selectedOrderProducts.length+" produs(e) în catalog":""}.`;
     $("newOrderNumber").value="";$("newClient").value="";
+    selectedOrderProducts=[];renderSelectedOrderProducts();
     await load();show("manager");
   }catch(e){$("createOrderMsg").textContent=e.message}finally{busy=false}
 }
@@ -389,6 +476,8 @@ $("finishPickingBtn").onclick=finalize;
 $("ackBtn").onclick=seen;
 $("closeOrderBtn").onclick=closeOrder;
 $("createOrderBtn").onclick=createOrder;
+$("importProductsBtn").onclick=()=>importProducts().catch(e=>$("productImportMsg").textContent=e.message);
+$("addOrderProductBtn").onclick=()=>{try{addSelectedProduct()}catch(e){$("productImportMsg").textContent=e.message}};
 $("changePasswordBtn").onclick=changePassword;
 $("agentTab").onclick=()=>show("agent");$("managerTab").onclick=()=>show("manager");$("warehouseTab").onclick=()=>show("warehouse");$("historyTab").onclick=()=>show("history");
 $("salamiInput").addEventListener("input",()=>pickingDirty=true);
